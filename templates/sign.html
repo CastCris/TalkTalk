@@ -1,0 +1,11 @@
+{% extends "default/layout.html" %}
+{% block title %}Sign{% endblock %}
+{% block content %}
+<form method='POST' action='sign_auth'>
+    <label>User name</label>
+    <input autocomplete="off" type="text" name="user_name">
+
+    <label>User password</label>
+    <input autocomplete="off" type="text" name="user_password">
+</form>
+{% endblock %}

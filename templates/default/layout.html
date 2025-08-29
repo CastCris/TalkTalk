@@ -1,20 +1,30 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>{% tittle %}</title>
-
-	<style>
-		body{
-			display
-
+    <title>{% block title %}{% endblock %}</title>
 </head>
 <body>
-	<div id="slide">
-		<div id="slide_rom"></div>
-		<div id="slide_auth"></div>
-	</div>
+    <header>
+        <div>
+            {% if not user %}
+                <a href="{{ url_for("login") }}">login</a>
+                <a href="{{ url_for("sign") }}">sign</a>
+            {% endif %}
+            
+            {% if user %}
+            <a href="{{ url_for("logout") }}">log out</a>
+            {% endif %}
+        </div>
 
-	<div id="chat"></div>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    {% if g.message %}
+    <div>
+        <p>{{ g.message }}
+    </div>
+    {% endif %}
 </body>
 </html>
 

@@ -1,1 +1,50 @@
-<h1>Hello World</h1>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Index</title>
+</head>
+<body>
+    <div id="rooms">
+        <a href="{{ url_for("room_create") }}">create room</a>
+        <ul id="rooms_able"></ul>
+    </div>
+
+    <div id="chat">
+        <div id="chat_message"></div>
+        <form id="chat_forms">
+            <input type="text" autocomplete="off" placeholder="Do the world a best place" id="chat_input">
+            <button type="submit" style="display:none"></button>
+        </form>
+    </div>
+
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <script>
+        const socket=io();
+        const room_curr=0;
+
+        const OUTPUT_BOX=document.getElementById("chat_message");
+        const INPUT_BOX=document.getElementById("chat_input");
+        const FORMS=document.getElementById("chat_forms");
+
+        socket.on('message', (msg) => {
+            OUTPUT_BOX.innerHTML+=msg+'<br>';
+        });
+
+        FORMS.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            if(!INPUT_BOX.value)
+                return;
+            socket.emit('message', {
+                message:INPUT_BOX.value,
+                room:room_curr
+            });
+
+            INPUT_BOX.value='';
+        });
+
+
+        function display
+    </script>
+</body>
+</html>

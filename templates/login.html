@@ -1,0 +1,16 @@
+{% extends "default/layout.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<form method="POST" action="login_auth">
+    <label>User name:</label>
+    <input type="text" autocomplete="off" name="user_name">
+
+    <label>User email:</label>
+    <input type="email" autocomplete="off" name="user_email">
+
+    <label>User password:</label>
+    <input type="text" autocomplete="offf" name="user_password">
+
+    <button type='submit' style='display: none'></button>
+</form>
+{% endblock %}
