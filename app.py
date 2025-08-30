@@ -60,11 +60,11 @@ def login_auth()->object:
         result = user_insert(user_name, user_email, user_password)
     except sqlite3.OperationalError:
         flask.session["message"]="An error occurs..."
-        return flask.redirect(flask.url_for('login'))
+        return flask.redirect(flask.url_for('login_display'))
 
     if result == 1:
         flask.session["message"]="Unavailable user name"
-        return flask.redirect(flask.url_for('login'))
+        return flask.redirect(flask.url_for('login_display'))
 
 
     flask.session['message'] = ''
@@ -93,12 +93,12 @@ def sign_auth()->object:
 
     if not rows:
         flask.session['message'] = "Unavaible user name"
-        return flask.redirect(flask.url_for('sign'))
+        return flask.redirect(flask.url_for('sign_display'))
 
     print(rows)
     if rows[1] != user_password:
         flask.session['message'] = "Incorrect password"
-        return flask.redirect(flask.url_for('sign'))
+        return flask.redirect(flask.url_for('sign_display'))
 
     flask.session['message'] = ''
     flask.session["user_name"] = user_name
