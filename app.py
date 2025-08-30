@@ -1,11 +1,19 @@
+import os
 import flask
 import flask_socketio
 
 from database import *
 
+INITIAL_ROOM = 0
+SECRET_KEY_LEN = 26
+
+app = flask.Flask(__name__)
+app.config['SECRET_KEY'] = os.urandom(SECRET_KEY_LEN)
+socketio = flask_socketio.SocketIO(app)
+
 cursor.execute("""
     CREATE TABLE IF NOT EXISTS room (
-        name VARCHAR(100) PRIMARY KEY AUTOINCREMENT,
+        name VARCHAR(100) PRIMARY KEY,
         user_admin VARCHAR(80)
     );
 """
@@ -15,33 +23,31 @@ cursor.execute("""
     CREATE TABLE IF NOT EXISTS user (
         name VARCHAR(80) PRIMARY KEY,
         email VARCHAR(254),
-        password VARCHAR(200)
+        status VARCHAR(50),
+        password VARCHAR(50)
     );
 """)
 
-INITIAL_ROOM = 0
-ROOMS_ABLE = set()
-
-app = flask.Flask(__name__)
-app.config['SECRET_KEY'] = '234567890-='
-socketio = flask_socketio.SocketIO(app)
-
-user = None
-
+###
+@app.before_request
+def before_request()->None:
+    if "user_name" in flask.request.cookies:
+        flask.session["user_name"] = flask.request.cookies["user_name"]
 
 ###
 @app.route('/')
 def index()->object:
-    user = flask.request.cookies.get('user_name')
-    if not user:
-        return flask.redirect(flask.url_for('login'))
+    print(flask.session)
+    if not "user_name" in flask.session or not flask.session["user_name"]:
+        return flask.redirect('/login/display')
     return flask.render_template('index.html')
 
-@app.route('/login')
-def login()->object:
+
+@app.route('/login/display')
+def login_display()->object:
     return flask.render_template('login.html')
 
-@app.route('/login_auth', methods=['POST'])
+@app.route('/login/auth', methods=['POST'])
 def login_auth()->object:
     if flask.request.method != 'POST':
         return
@@ -51,47 +57,97 @@ def login_auth()->object:
     user_password = flask.request.form['user_password']
 
     try:
-        create_user(user_name, user_email, user_password)
+        result = user_insert(user_name, user_email, user_password)
     except sqlite3.OperationalError:
-        flask.g.message = 'User name invalid'
+        flask.session["message"]="An error occurs..."
         return flask.redirect(flask.url_for('login'))
 
-    flask.g.message=''
+    if result == 1:
+        flask.session["message"]="Unavailable user name"
+        return flask.redirect(flask.url_for('login'))
 
-    response = make_response(flask.redirect(flask.url_for('index')))
-    response.set_cooekie('user_name')
+
+    flask.session['message'] = ''
+    flask.session['user_name'] = user_name
+
+    response = flask.make_reponse(flask.redirect('/'))
+    response.set_cookie('user_name', user_name)
+
     return response
 
 
-@app.route('/sign')
-def sign()->object:
+@app.route('/sign/display')
+def sign_display()->object:
     return flask.render_template('sign.html')
 
-@app.route('/sign_auth')
+@app.route('/sign/auth', methods=['POST'])
 def sign_auth()->object:
-    pass
+    if flask.request.method != 'POST':
+        return
+
+    user_name = flask.request.form['user_name']
+    user_password = flask.request.form['user_password']
+
+    result = cursor.execute(f"SELECT name, password FROM user WHERE name = '{ user_name }'")
+    rows = result.fetchone()
+
+    if not rows:
+        flask.session['message'] = "Unavaible user name"
+        return flask.redirect(flask.url_for('sign'))
+
+    print(rows)
+    if rows[1] != user_password:
+        flask.session['message'] = "Incorrect password"
+        return flask.redirect(flask.url_for('sign'))
+
+    flask.session['message'] = ''
+    flask.session["user_name"] = user_name
+
+    response = flask.make_response(flask.redirect('/'))
+    response.set_cookie('user_name', user_name)
+
+    return response
 
 
-@app.route('/room_create')
+@app.route('/logout')
+def logout()->object:
+    response = flask.make_response(flask.redirect('/'))
+    response.set_cookie('user_name', '', expires=0)
+    flask.session["user_name"] = None
+
+    return response
+
+
+@app.route('/room_manager/create')
 def room_create()->object:
-    return flask.redirect('room_create.html')
+    return flask.render_template('room_create.html')
 
-@app.route('/room_create_auth', methods = ['POST'])
+@app.route('/room_manager/create/auth', methods = ['POST'])
 def room_create_auth()->object:
     if flask.request.method != 'POST':
         return
 
     room_name = flask.request.form['room_name']
 
+    result = 0
     try:
-        create_room(room_name)
+        result = insert_room(room_name)
     except:
-        flask.g.message = 'Invalid room name'
+        flask.session["message"]="An error occurs..."
         return flask.redirect(flask.url_for('room_create'))
 
-    flask.g.message = ''
+    if result == 1:
+        flask.session["message"]="Room name already exists"
+        return flask.redirect(flask.url_for('room_create'))
+
+    flask.session["message"]=''
+
     return flask.redirect(flask.url_for('index'))
 
+##
+@app.route('/load_home_page')
+def home_page()->None:
+    return flask.redirect("/")
 
 ###
 

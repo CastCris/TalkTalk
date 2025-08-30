@@ -6,23 +6,29 @@
 <body>
     <header>
         <div>
-            {% if not user %}
-                <a href="{{ url_for("login") }}">login</a>
-                <a href="{{ url_for("sign") }}">sign</a>
-            {% endif %}
-            
-            {% if user %}
-            <a href="{{ url_for("logout") }}">log out</a>
+            {% if not session.user_name %}
+                <a href="{{ url_for("login_display") }}">login</a>
+                <a href="{{ url_for("sign_display") }}">sign</a>
+            {% else %}
+                <a href="{{ url_for("logout") }}">log out</a>
+                <a href="{{ url_for("home_page") }}">home page</a>
             {% endif %}
         </div>
+        {% if session.user_name %}
+        <div>
+            <p>Hello {{ session.user_name }}</p>
+        </div>
+        {% endif %}
+
+    </header>
 
     <main>
         {% block content %}{% endblock %}
     </main>
 
-    {% if g.message %}
+    {% if session.message %}
     <div>
-        <p>{{ g.message }}
+        <p>{{ session.message }}</p>
     </div>
     {% endif %}
 </body>
