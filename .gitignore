@@ -6,4 +6,6 @@
 !requirements.txt
 
 !*.py
-!*.html
+!/templates/**/*.html
+!/static/**/*.css
+!/static/**/*.js
