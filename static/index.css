@@ -1,0 +1,20 @@
+main{
+    display:flex;
+    justify-content: space-between;
+}
+
+#rooms{
+    background-color: gray;
+    width: 35vw;
+    height: 100vh;
+
+    overflow-y: scroll;
+}
+
+#chat_forms{
+    width: 50vw;
+}
+
+#chat_input{
+    width: 45vw;
+}

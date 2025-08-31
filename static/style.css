@@ -1,0 +1,70 @@
+:root{
+    --input_width: 250px;
+
+    --forms_back_color: orange;
+    --forms_width: auto;
+
+    --label_text_color: black;
+}
+
+*{
+    margin: 0px;
+}
+
+body{
+    overflow-y: hidden;
+}
+
+main{
+    display: flex;
+    justify-content: center;
+}
+
+form{
+    display: flex;
+    flex-direction: column;
+
+    background-color: var(--forms_back_color);
+
+    border: 5px solid var(--forms_back_color);
+    border-radius: 10px;
+
+    width: 300px;
+
+    padding: 30px;
+
+}
+
+input{
+    padding: 5px  10px  5px  10px;
+    border: 2px solid black;
+    border-radius: 10px;
+    
+    width: var(--input_width);
+}
+
+label{
+    color: var(--label_text_color);
+    padding: 10px;
+}
+
+header{
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+
+.user_auth > a{
+    padding: 15px 10px 10px 10px;
+
+    background-color: gray;
+    color: white;
+}
+
+.user{
+    background-color: gray;
+    color: white;
+
+    padding: 15px 10px 10px 10px;
+}
