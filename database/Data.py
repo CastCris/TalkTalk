@@ -29,11 +29,12 @@ def room_insert(room_name: str, user_name: str)->object:
 def user_insert(name:str, email:str, password: str)->object:
     result = cursor.execute(f"SELECT (name) FROM user WHERE (name = '{ name }')")
     result = result.fetchone()
+    print(result,'meu acasos me dizem o que sou')
     if result:
         return 1
 
     cursor.execute(f"""
-    INSERT INTO user VALUES('{ name }', '{ email }', '{ password }');
+    INSERT INTO user(name, email, password, status) VALUES('{ name }', '{ email }', '{ password }', 'online');
     """)
 
     db.commit()

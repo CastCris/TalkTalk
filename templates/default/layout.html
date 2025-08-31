@@ -2,10 +2,19 @@
 <html>
 <head>
     <title>{% block title %}{% endblock %}</title>
+
+    <link rel="stylesheet" href="{{ url_for("static", filename="style.css") }}">
+    <!--
+    <style>
+        body{
+            background-color:orange;
+        }
+    </style>
+    -->
 </head>
 <body>
     <header>
-        <div>
+        <div class="user_auth">
             {% if not session.user_name %}
                 <a href="{{ url_for("login_display") }}">login</a>
                 <a href="{{ url_for("sign_display") }}">sign</a>
@@ -15,7 +24,7 @@
             {% endif %}
         </div>
         {% if session.user_name %}
-        <div>
+        <div class="user">
             <p>Hello {{ session.user_name }}</p>
         </div>
         {% endif %}

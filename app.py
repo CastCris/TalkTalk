@@ -4,21 +4,25 @@ import flask_socketio
 
 from database import *
 
-INITIAL_ROOM = 0
 SECRET_KEY_LEN = 26
 
+###
 app = flask.Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(SECRET_KEY_LEN)
-socketio = flask_socketio.SocketIO(app)
 
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS room (
-        name VARCHAR(100) PRIMARY KEY,
-        user_admin VARCHAR(80)
-    );
-"""
-)
+socketio = flask_socketio.SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
+
+ROOM_INITIAL = 'index'
+
+STATUS_DIE = 'die'
+STATUS_ONLINE = 'online'
+STATUS_OFFLINE = 'offline'
+
+MESSAGE_MAX = 500
+MESSAGE_SCROLLOFF = 25
+
+# user
 cursor.execute("""
     CREATE TABLE IF NOT EXISTS user (
         name VARCHAR(80) PRIMARY KEY,
@@ -27,6 +31,48 @@ cursor.execute("""
         password VARCHAR(50)
     );
 """)
+
+try:
+    cursor.execute("""
+    INSERT INTO user VALUES('super_admin', 'thisemaildoesntexist@email.com', 'die', '')
+    """)
+except:
+    print('An error occurs in super_admin creation')
+
+# room
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS room (
+        name VARCHAR(100) PRIMARY KEY,
+        user_admin VARCHAR(80),
+
+        CONSTRAINT FK_user_admin
+            FOREIGN KEY(user_admin) REFERENCES user(name)
+    );
+"""
+)
+
+try:
+    cursor.execute("""
+    INSERT INTO room VALUES('index', 'super_admin')
+    """)
+except:
+    print('An error occurs in index room creation')
+
+# message
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS message(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_offset CHAR(20) UNIQUE,
+
+        room_name VARCHAR(80),
+        content VARCHAR,
+
+        CONSTRAINT FK_room_name
+            FOREIGN KEY(room_name) REFERENCES room(name)
+    );
+""")
+
+db.commit()
 
 ###
 @app.before_request
@@ -39,7 +85,7 @@ def before_request()->None:
 def index()->object:
     print(flask.session)
     if not "user_name" in flask.session or not flask.session["user_name"]:
-        return flask.redirect('/login/display')
+        return flask.redirect('/sign/display')
     return flask.render_template('index.html')
 
 
@@ -56,6 +102,7 @@ def login_auth()->object:
     user_email = flask.request.form['user_email']
     user_password = flask.request.form['user_password']
 
+    result = user_insert(user_name, user_email, user_password)
     try:
         result = user_insert(user_name, user_email, user_password)
     except sqlite3.OperationalError:
@@ -88,11 +135,16 @@ def sign_auth()->object:
     user_name = flask.request.form['user_name']
     user_password = flask.request.form['user_password']
 
-    result = cursor.execute(f"SELECT name, password FROM user WHERE name = '{ user_name }'")
+    result = cursor.execute(f"SELECT name, password, status FROM user WHERE name = '{ user_name }'")
+    # print(result,'-')
     rows = result.fetchone()
 
     if not rows:
         flask.session['message'] = "Unavaible user name"
+        return flask.redirect(flask.url_for('sign_display'))
+
+    if rows[2]==STATUS_DIE:
+        flask.session['message'] = "This user is unactive"
         return flask.redirect(flask.url_for('sign_display'))
 
     print(rows)
@@ -142,6 +194,8 @@ def room_create_auth()->object:
 
     flask.session["message"]=''
 
+    # socketio.send(
+
     return flask.redirect(flask.url_for('index'))
 
 ##
@@ -150,23 +204,83 @@ def home_page()->None:
     return flask.redirect("/")
 
 ###
+def room_fetch()->set:
+    rooms = cursor.select("""
+    SELECT name FROM room
+    """)
+
+    rooms = rooms.fetchall()
+    if not rooms:
+        return None
+
+    return rooms
+
+def message_fetch(offset, room_name)->set:
+    messages = cursor.select(f"""
+    SELECT content, id FROM message WHERE id > { offset } AND room = '{ room_name }'
+    """)
+
+    messages = messages.fetchall()
+    if not messages:
+        return None
+
+    return messages
+
 
 @socketio.on('connect')
-def handler_connect()->None:
-    ip = flask.request.remote_addr;
-    flask_socketio.send('New user found: '+ip, to=INITIAL_ROOM)
+def connect()->None:
+    global ROOM_INITIAL
+
+    print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+    user_ip = flask.request.remote_addr;
+    user_name = flask.request.cookies["user_name"];
+
+    flask_socketio.join_room(ROOM_INITIAL)
+
+    if ROOM_INITIAL in flask.request.cookies:
+        ROOM_INITIAL = flask.request.cookies["room_index"]
+
+    flask_socketio.emit(
+            'message',
+            f"User connection: { user_name }, { user_ip }",
+            broadcast = True
+    )
+
+@socketio.on('disconnect')
+def disconnect()->None:
+    user_ip = flask.request.remote_addr;
+    user_name = flask.request.cookies["user_name"]
+
+    flask_socketio.emit(
+            'message',
+            f"User disconnect: { user_name }, { user_ip }",
+            to = ROOM_INITIAL
+    )
+
 
 @socketio.on('room_join')
 def room_join(data)->None:
-    room = data["room"]
+    room_name = data["room"]
+    if not room_name:
+        return
+
+    flask_socketio.join_room(room_name)
+    flask_socketio.emit(
+            'room_joined',
+            {"room_name": room_name}
+    )
 
 @socketio.on('message')
 def handler_message(data)->None:
     message = data["message"]
-    room = data["room"]
+    room_name = data["room"]
 
-    flask_socketio.send(message, to=room)
+    flask_socketio.emit(
+            'message',
+            {"message": message},
+            to = room_name
+    )
 
 
 if __name__=='__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)

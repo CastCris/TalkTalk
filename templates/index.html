@@ -2,22 +2,26 @@
 {% block title %}Index{% endblock %}
 {% block content %}
 
+<link rel="stylesheet" href="{{ url_for("static", filename="index.css") }}">
+
 <div id="rooms">
     <a href="{{ url_for("room_create") }}">create room</a>
     <ul id="rooms_able"></ul>
 </div>
 
 <div id="chat">
-    <div id="chat_message"></div>
     <form id="chat_forms">
         <input type="text" autocomplete="off" placeholder="Do the world a better place" id="chat_input">
         <button type="submit" style="display:none"></button>
     </form>
+
+    <div id="chat_message">
+    </div>
 </div>
 
 <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
 <script>
-    const socket=io();
+    const socket=io('http://localhost:5000');
     const room_curr=0;
 
     const OUTPUT_BOX=document.getElementById("chat_message");
@@ -25,7 +29,7 @@
     const FORMS=document.getElementById("chat_forms");
 
     socket.on('message', (msg) => {
-        OUTPUT_BOX.innerHTML+=msg+'<br>';
+        OUTPUT_BOX.innerHTML = msg + '<br>' + OUTPUT_BOX.innerHTML;
     });
 
     FORMS.addEventListener('submit', (e) => {
