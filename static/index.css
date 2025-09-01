@@ -18,3 +18,8 @@ main{
 #chat_input{
     width: 45vw;
 }
+
+#chat_message{
+    overflow-y: scroll;
+    height: 100vh;
+}

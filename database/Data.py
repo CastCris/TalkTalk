@@ -11,7 +11,6 @@ def room_able()->set:
     result = result.fetchone()
     return result
 
-
 def room_insert(room_name: str, user_name: str)->object:
     room_avaible = room_able()
     if room_avaible and room_name in room_avaible:
@@ -29,7 +28,7 @@ def room_insert(room_name: str, user_name: str)->object:
 def user_insert(name:str, email:str, password: str)->object:
     result = cursor.execute(f"SELECT (name) FROM user WHERE (name = '{ name }')")
     result = result.fetchone()
-    print(result,'meu acasos me dizem o que sou')
+    print(result,'mil acasos me dizem o que sou')
     if result:
         return 1
 
@@ -41,3 +40,13 @@ def user_insert(name:str, email:str, password: str)->object:
 
     return 0
 
+
+def message_insert(message_id:str, content:str, room_name:str)->object:
+    print(message_id, content, room_name)
+    result = cursor.execute(f"""
+    INSERT INTO message VALUES('{ message_id }', (SELECT unixepoch('subsec')), '{ room_name }', '{ content }') 
+    """)
+
+    db.commit()
+    
+    return result
