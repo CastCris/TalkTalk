@@ -11,41 +11,84 @@ def room_able()->set:
     result = result.fetchone()
     return result
 
-def room_insert(room_name: str, user_name: str)->object:
+def room_insert(room_name: str, user_name: str)->int:
     room_avaible = room_able()
     if room_avaible and room_name in room_avaible:
         return 1
 
-    result = cursor.execute(f"""
-    INSERT INTO room(name, user_admin) VALUES('{ room_name }', '{ user_name }');
-    """)
+
+    cursor.execute(
+        "INSERT INTO room VALUES(?, ?)",
+        (room_name, user_name)
+    )
 
     db.commit()
 
     return 0
 
 
-def user_insert(name:str, email:str, password: str)->object:
+def user_insert(name:str, email:str, password: str)->int:
     result = cursor.execute(f"SELECT (name) FROM user WHERE (name = '{ name }')")
     result = result.fetchone()
-    print(result,'mil acasos me dizem o que sou')
+    # print(result,'mil acasos me dizem o que sou')
+
     if result:
         return 1
 
-    cursor.execute(f"""
-    INSERT INTO user(name, email, password, status) VALUES('{ name }', '{ email }', '{ password }', 'online');
-    """)
+    cursor.execute(
+        "INSERT INTO user VALUES(?, ?, ?, ?, ?)",
+        (name, email, 'online', password, 0)
+    )
 
     db.commit()
 
     return 0
 
+def user_status_update(user_name:str, status_new:str)->object:
+    result = cursor.execute(
+        "UPDATE user SET status = ? WHERE name = ?",
+        (status_new, user_name)
+    )
 
-def message_insert(message_id:str, content:str, room_name:str)->object:
+    db.commit()
+
+    return result
+
+def user_connections_add(user_name:str)->object:
+    result = cursor.execute(
+        "UPDATE user SET connections = connections + 1 WHERE name = ?",
+        (user_name, )
+    )
+
+    return result
+
+def user_connections_minus(user_name:str)->object:
+    result = cursor.execute(
+        "UPDATE user SET connections = connections - 1 WHERE name = ?",
+        (user_name, )
+    )
+
+    return result
+
+def user_connections_get(user_name:str)->object:
+    result = cursor.execute(
+        "SELECT connections FROM user WHERE name = ?",
+        (user_name, )
+    )
+
+    result = result.fetchone()
+
+    if not result:
+        return 0
+    return result[0]
+
+
+def message_insert(message_id:str, content:str, user_name:str, room_name:str)->object:
     print(message_id, content, room_name)
-    result = cursor.execute(f"""
-    INSERT INTO message VALUES('{ message_id }', (SELECT unixepoch('subsec')), '{ room_name }', '{ content }') 
-    """)
+    result = cursor.execute(
+        "INSERT INTO message VALUES(?, (SELECT unixepoch()), ?, ?, ?)",
+        (message_id, user_name, room_name, content, )
+    )
 
     db.commit()
     

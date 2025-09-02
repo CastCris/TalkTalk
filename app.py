@@ -33,7 +33,9 @@ cursor.execute("""
         name VARCHAR(80) PRIMARY KEY,
         email VARCHAR(254),
         status VARCHAR(50),
-        password VARCHAR(50)
+        password VARCHAR(50),
+
+        connections INTEGER
     );
 """)
 
@@ -69,7 +71,9 @@ cursor.execute("""
         id CHAR(20) PRIMARY KEY,
         data REAL,
 
+        user_name VARCHAR(80),
         room_name VARCHAR(80),
+
         content VARCHAR,
 
         CONSTRAINT FK_room_name
@@ -220,52 +224,64 @@ def room_fetch()->set:
 
 def message_fetch(date_offset:int, room_name:str)->set:
     messages = cursor.execute(f"""
-    SELECT content, data FROM message WHERE data > { date_offset } AND room_name = '{ room_name }'
+    SELECT content, data, user_name FROM message WHERE data > { date_offset } AND room_name = '{ room_name }'
     """)
 
     messages = messages.fetchall()
 
     return messages
 
-def message_send(message_content:str, message_offset:str, room:str)->None:
+def message_send_room(message_content:str, message_offset:str, user_name:str, room_name:str)->None:
     flask_socketio.emit(
             'message',
             {
-                'message': message_content,
+                'message_content': message_content,
                 'message_offset': message_offset,
-                'room': room
+
+                'user_name': user_name
             },
-            to = room
+            to = room_name
+    )
+
+def message_send(message_content, message_offset, user_name)->None:
+    flask_socketio.emit(
+            'message',
+            {
+                'message_content': message_content,
+                'message_offset': message_offset,
+
+                'user_name': user_name
+            }
     )
 
 ##
 def recovery_data(room_name:str, message_offset:str)->None:
     rooms_needed = None
     message_needed = None
-
+    
     # rooms_needed = room_fetch()
     # message_needed  = message_fetch(message_offset, room_name)
+    rooms_needed = room_fetch()
+    message_needed  = message_fetch(message_offset, room_name)
+    """
     try:
         rooms_needed = room_fetch()
         message_needed  = message_fetch(message_offset, room_name)
     except:
         flask.session["message"] = "An error occurs in load of messages and/or rooms..."
         return
+    """
 
-    # print(message_needed,'inteligencia visionaria')
+    print(message_needed,'inteligencia visionaria')
     for i in message_needed:
         message_content = i[0]
-        message_data = i[1]
+        message_offset = i[1]
+        message_user = i[2]
+
 
         # print(i)
 
-        flask_socketio.emit(
-                'message',
-                {
-                    'message': message_content,
-                    'message_offset': message_data,
-                }
-        )
+        message_send(message_content, message_offset, message_user)
 
     flask_socketio.emit('room_recovery', {'rooms': rooms_needed})
 
@@ -278,15 +294,27 @@ def handler_connect()->None:
     message_offset = flask.request.args.get('messageOffset', default=0, type=int)
     server_room = flask.request.args.get('serverRoom', default='index', type=str)
 
-    # print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+    ###
     user_ip = flask.request.remote_addr;
     user_name = flask.request.cookies["user_name"];
+    user_connections = user_connections_get(user_name)
+
+    user_connections_add(user_name)
+    user_status_update(user_name, STATUS_ONLINE)
+
+    ###
+    message = f"User connection: { user_name }, { user_ip }"
+    if user_connections:
+        message = f"User connection device: { user_name }, { user_ip }"
 
     handler_message({
-        'message_content' : f"User connection: { user_name }, { user_ip }",
+        'message_content' : message,
         'message_id' : ROOM_INITIAL_CLIENT_OFFSET+str(ROOM_INITIAL_COUNTER),
+        'user_name' : 'system',
+
         'room' : ROOM_INITIAL
     })
+
     ROOM_INITIAL_COUNTER += 1
 
     flask_socketio.join_room(server_room)
@@ -300,12 +328,23 @@ def handler_disconnect()->None:
 
     user_ip = flask.request.remote_addr;
     user_name = flask.request.cookies["user_name"]
+    user_connections = user_connections_get(user_name)
+
+    user_connections_minus(user_name)
+
+    message = f"User disconnect: { user_name }, { user_ip }"
+    if user_connections > 1:
+        message = f"User disconnect device: { user_name }, { user_ip }"
 
     handler_message({
-        'message_content' : f"User disconnect: { user_name }, { user_ip}",
+        'message_content' : message,
         'message_id': ROOM_INITIAL_CLIENT_OFFSET+str(ROOM_INITIAL_COUNTER),
+        'user_name': 'system',
+
         'room' : ROOM_INITIAL
     })
+
+    user_status_update(user_name, STATUS_OFFLINE)
 
     ROOM_INITIAL_COUNTER += 1
 
@@ -329,26 +368,31 @@ def room_recovery(rooms:list)->None:
 
 @socketio.on('message')
 def handler_message(data)->None:
-    print(data)
+    # print(data)
     message_content = data["message_content"]
     message_id = data["message_id"]
-    room_name = data["room"]
 
-    # message_insert(message_id, message_content, room_name) 
+    room_name = data["room"]
+    user_name = flask.request.cookies["user_name"]
+    if 'user_name' in data:
+        user_name = data['user_name']
+
+    message_insert(message_id, message_content, user_name, room_name) 
+    """
     try:
-        message_insert(message_id, message_content, room_name) 
+        message_insert(message_id, message_content, user_name, room_name) 
     except:
         flask.session["message"] = "An error occurs in message sedding"
         print('ERROR')
         return
+    """
 
     message_date = cursor.execute(f"SELECT data FROM message WHERE id = '{ message_id }'")
     message_date = message_date.fetchall()
-    
     #
 
-    print(data,'##########')
-    message_send(message_content, message_date, room_name)
+    print(user_name)
+    message_send_room(message_content, message_date, user_name, room_name)
 
 
 if __name__=='__main__':

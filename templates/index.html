@@ -64,7 +64,7 @@
     const socket = io('http://localhost:5000',{
         auth:{
             messageOffset: 0,
-            serverRoom: 'index'
+            serverRoom: 'index',
         }
     });
     const socket_id = crypto.getRandomValues(new Uint32Array(1))[0];
@@ -86,8 +86,10 @@
     });
 
     socket.on('message', (data) => {
-        const message = data["message"];
+        const message = data["message_content"];
         const serverDataOffset = data["message_offset"];
+
+        const user_name = data["user_name"];
 
         console.log(data);
 
@@ -97,8 +99,11 @@
         OUTPUT_BOX.innerHTML = `
             <div class="message">
                 <p class="message_content">${message}</p>
-                <p class="message_time">${clock["hours"]}:${clock["minutes"]}:${clock["seconds"]}
+                <span class="message_time">${clock["hours"]}:${clock["minutes"]}:${clock["seconds"]}</span>
+                <span>--</span>
+                <span class="message_user">${user_name}</span>
             </div>
+            <br>
         ` + OUTPUT_BOX.innerHTML;
 
         socket.auth.serverOffset = serverDataOffset
