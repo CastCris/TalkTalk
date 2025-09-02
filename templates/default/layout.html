@@ -3,7 +3,7 @@
 <head>
     <title>{% block title %}{% endblock %}</title>
 
-    <link rel="stylesheet" href="{{ url_for("static", filename="style.css") }}">
+    <link rel="stylesheet" href="{{ url_for("static", filename="style/style.css") }}">
     <!--
     <style>
         body{
@@ -16,11 +16,11 @@
     <header>
         <div class="user_auth">
             {% if not session.user_name %}
-                <a href="{{ url_for("login_display") }}">login</a>
-                <a href="{{ url_for("sign_display") }}">sign</a>
+                <a href="{{ url_for("main.login_display") }}">login</a>
+                <a href="{{ url_for("main.sign_display") }}">sign</a>
             {% else %}
-                <a href="{{ url_for("logout") }}">log out</a>
-                <a href="{{ url_for("home_page") }}">home page</a>
+                <a href="{{ url_for("main.logout") }}">log out</a>
+                <a href="{{ url_for("main.home_page") }}">home page</a>
             {% endif %}
         </div>
         {% if session.user_name %}

@@ -1,6 +1,6 @@
 {% extends 'default/layout.html' %}
 {% block content %}
-<form method="POST" action="{{ url_for("room_create_auth") }}">
+<form method="POST" action="{{ url_for("main.room_create_auth") }}">
     <label>Room name</label>
     <input autocomplete='off' name='room_name' type='name'>
 

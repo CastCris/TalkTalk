@@ -1,7 +1,7 @@
 {% extends "default/layout.html" %}
 {% block title %}Login{% endblock %}
 {% block content %}
-<form method="POST" action="{{ url_for("login_auth") }}">
+<form method="POST" action="{{ url_for("main.login_auth") }}">
     <label>User name:</label>
     <input type="text" autocomplete="off" name="user_name">
 

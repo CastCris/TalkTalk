@@ -1,7 +1,7 @@
 {% extends "default/layout.html" %}
 {% block title %}Sign{% endblock %}
 {% block content %}
-<form method='POST' action="{{ url_for('sign_auth') }}">
+<form method='POST' action="{{ url_for("main.sign_auth") }}">
     <label>User name: </label>
     <input autocomplete="off" type="text" name="user_name">
 
