@@ -1,4 +1,4 @@
-const socket = io('http://localhost:5000',{
+const socket = io({
     auth:{
         messageOffset: 0,
         serverRoom: 'index',
@@ -51,7 +51,7 @@ function label_time_add(time_curr, time_prev){
 
     OUTPUT_BOX.innerHTML = ` 
     <div class="update_data">
-        <p class="data">${time_prev["day"]}/${time_prev["month"]}/${time_prev["year"]}
+        <h2 class="data">${time_prev["day"]}/${time_prev["month"]}/${time_prev["year"]}</h2>
     </div>
     ` + OUTPUT_BOX.innerHTML;
 }
@@ -99,6 +99,18 @@ socket.on('room_recovery', (data) => {
     }
 });
 
+socket.on('room_create', (data) => {
+    ROOMS_ABLE.innerHTML = '';
+
+    rooms = data["room_able"]
+    for(var i=0;i<rooms.length;++i){
+        ROOMS_ABLE.innerHTML += `
+            <li>
+                <button onclick='room_change(this)' id='room_name_${rooms[i]}'> ${rooms[i]} </button>
+            </li>`;
+    }
+});
+
 //
 FORMS.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -116,15 +128,16 @@ FORMS.addEventListener('submit', (e) => {
 });
 
 function room_change(button){
-    const room_name = button.id.split('room_name_')[1]
+    const room_name_new = button.id.split('room_name_')[1]
+    const room_name_old = socket.auth.serverRoom;
 
     OUTPUT_BOX.innerHTML = '';
     ROOMS_ABLE.innerHTML = '';
     
-    socket.auth.serverRoom = room_name;
-
+    socket.auth.serverRoom = room_name_new;
 
     socket.emit('room_change',{
-        "room_name": room_name
+        "room_name_old": room_name_old,
+        "room_name_new": room_name_new
     });
 }

@@ -25,6 +25,13 @@ ROOM_INITIAL_COUNTER = 0
 MESSAGE_MAX = 500
 MESSAGE_SCROLLOFF = 25
 
+SUPER_ADMIN = 'super_admin'
+
+# PRAGMA
+cursor.execute("""
+    PRAGMA foreign_keys = ON;
+""")
+
 # user
 cursor.execute("""
     CREATE TABLE IF NOT EXISTS user (
@@ -37,13 +44,6 @@ cursor.execute("""
     );
 """)
 
-try:
-    cursor.execute("""
-    INSERT INTO user VALUES('super_admin', 'thisemaildoesntexist@email.com', 'die', '')
-    """)
-except:
-    print('An error occurs in super_admin creation')
-
 # room
 cursor.execute("""
     CREATE TABLE IF NOT EXISTS room (
@@ -55,13 +55,6 @@ cursor.execute("""
     );
 """
 )
-
-try:
-    cursor.execute("""
-    INSERT INTO room VALUES('index', 'super_admin')
-    """)
-except:
-    print('An error occurs in index room creation')
 
 # message
 cursor.execute("""
@@ -78,8 +71,13 @@ cursor.execute("""
             FOREIGN KEY(room_name) REFERENCES room(name)
     );
 """)
-
 db.commit()
+
+try:
+    user_insert(SUPER_ADMIN, 'thisemaildoesntexists@email', STATUS_DIE, '')
+    room_insert(ROOM_INITIAL, SUPER_ADMIN)
+except Exception as e:
+    print('Setup server error: ',e)
 
 
 ###
@@ -101,7 +99,7 @@ def message_fetch(date_offset:int, room_name:str)->set:
 
     return messages
 
-def message_send_room(message_content:str, message_offset:str, user_name:str, room_name:str)->None:
+def message_send_room(message_content:str, message_offset:list, user_name:str, room_name:str)->None:
     flask_socketio.emit(
             'message',
             {
@@ -134,9 +132,11 @@ def data_recovery(room_name:str, message_offset:str)->None:
     try:
         rooms_needed = room_fetch()
         message_needed  = message_fetch(message_offset, room_name)
-    except:
-        messqage_needed = [("Error in message recovery", 0, "system")]
+    except Exception as e:
+        message_needed = [("Error in message recovery", 0, SUPER_ADMIN)]
         rooms_needed = ["Error in rooms recovery"]
+
+        print('Data_recovery ERROR: \n'+e)
         return
 
     print(message_needed,'inteligencia visionaria')
@@ -144,7 +144,6 @@ def data_recovery(room_name:str, message_offset:str)->None:
         message_content = i[0]
         message_offset = i[1]
         message_user = i[2]
-
 
         # print(i)
 
@@ -177,7 +176,7 @@ def handler_connect()->None:
     handler_message({
         'message_content' : message,
         'message_id' : ROOM_INITIAL_CLIENT_OFFSET+str(ROOM_INITIAL_COUNTER),
-        'user_name' : 'system',
+        'user_name' : SUPER_ADMIN,
 
         'room' : ROOM_INITIAL
     })
@@ -206,7 +205,7 @@ def handler_disconnect()->None:
     handler_message({
         'message_content' : message,
         'message_id': ROOM_INITIAL_CLIENT_OFFSET+str(ROOM_INITIAL_COUNTER),
-        'user_name': 'system',
+        'user_name': SUPER_ADMIN,
 
         'room' : ROOM_INITIAL
     })
@@ -233,36 +232,55 @@ def room_recovery(rooms:list)->None:
     rooms_copy.sort()
     flask_socketio.emit('room_recovery', rooms_copy)
 
+@socketio.on('room_create')
+def room_create_handler(data)->None:
+    room_name = data["room_name"]
+    room_able = room_get()
+
+    print(room_able)
+    room_able.append(room_name)
+    room_able.sort()
+
+    flask_socketio.emit(
+        'room_create',
+        {
+            "room_able": room_able,
+        },
+        broadcast = True
+    )
+
 @socketio.on('room_change')
 def room_change(data)->None:
-    room_name = data["room_name"]
-    room_join({"room": room_name})
+    room_name_old = data["room_name_old"]
+    room_name_new = data["room_name_new"]
 
-    data_recovery(room_name, 0)
+    flask_socketio.leave_room(room_name_old)
+    flask_socketio.join_room(room_name_new)
+
+    data_recovery(room_name_new, 0)
 
 
 @socketio.on('message')
 def handler_message(data)->None:
-    # print(data)
     message_content = data["message_content"]
     message_id = data["message_id"]
 
+    print(data)
+
     room_name = data["room"]
     user_name = flask.request.cookies["user_name"]
-    if 'user_name' in data:
-        user_name = data['user_name']
 
     try:
         message_insert(message_id, message_content, user_name, room_name) 
-    except:
+    except Exception as e:
         message_content = "Error in message loading"
-        print('ERROR')
+        print('Message error: ', e)
+        return
 
     message_date = cursor.execute(f"SELECT data FROM message WHERE id = '{ message_id }'")
     message_date = message_date.fetchall()
     #
 
-    print(user_name)
     message_send_room(message_content, message_date, user_name, room_name)
 
 

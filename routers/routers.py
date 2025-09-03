@@ -38,7 +38,7 @@ def login_auth()->object:
 
     # result = user_insert(user_name, user_email, user_password)
     try:
-        result = user_insert(user_name, user_email, user_password)
+        result = user_insert(user_name, STATUS_ONLINE, user_email, user_password)
     except sqlite3.OperationalError:
         flask.session["message"]="An error occurs..."
         return flask.redirect(flask.url_for('main.login_display'))
@@ -116,15 +116,18 @@ def room_create_auth()->object:
     room_name = flask.request.form['room_name']
     user_name = flask.request.cookies["user_name"]
 
-    result = room_insert(room_name, user_name)
+    result = 0
+    try:
+        result = room_insert(room_name, user_name)
+    except:
+        flask.session["message"] = "An error occurs"
+        return flask.redirect(flask.url_for('main.room_create'))
 
     if result == 1:
-        flask.session["message"]="Room name already exists"
+        flask.session["message"] = "Room name already exists"
         return flask.redirect(flask.url_for('main.room_create'))
 
     flask.session["message"]=''
-
-    # socketio.send(
 
     return flask.redirect(flask.url_for('main.index'))
 

@@ -9,15 +9,21 @@
 
 *{
     margin: 0px;
+    color: white;
 }
 
 body{
     overflow-y: hidden;
+    background-color: black;
 }
 
 main{
     display: flex;
     justify-content: center;
+}
+
+button, input{
+    color: black
 }
 
 form{

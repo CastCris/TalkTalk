@@ -3,17 +3,21 @@ import sqlite3
 db = sqlite3.connect('data.db', check_same_thread=False)
 cursor = db.cursor()
 
-def room_able()->set:
+def room_get()->set:
     result = cursor.execute("""
     SELECT name FROM room
     """)
 
-    result = result.fetchone()
-    return result
+    result = result.fetchall()
+    room_able = []
+    for i in result:
+        room_able.append(i[0])
+
+    return room_able
 
 def room_insert(room_name: str, user_name: str)->int:
-    room_avaible = room_able()
-    if room_avaible and room_name in room_avaible:
+    room_avaible = room_get()
+    if room_name in room_avaible:
         return 1
 
 
@@ -27,7 +31,7 @@ def room_insert(room_name: str, user_name: str)->int:
     return 0
 
 
-def user_insert(name:str, email:str, password: str)->int:
+def user_insert(name:str, email:str, status:str, password: str)->int:
     result = cursor.execute(f"SELECT (name) FROM user WHERE (name = '{ name }')")
     result = result.fetchone()
     # print(result,'mil acasos me dizem o que sou')
@@ -37,7 +41,7 @@ def user_insert(name:str, email:str, password: str)->int:
 
     cursor.execute(
         "INSERT INTO user VALUES(?, ?, ?, ?, ?)",
-        (name, email, 'online', password, 0)
+        (name, email, status, password, 0)
     )
 
     db.commit()

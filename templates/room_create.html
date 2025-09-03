@@ -1,9 +1,24 @@
 {% extends 'default/layout.html' %}
 {% block content %}
-<form method="POST" action="{{ url_for("main.room_create_auth") }}">
+<form method="POST" id="forms" action="{{ url_for("main.room_create_auth") }}">
     <label>Room name</label>
-    <input autocomplete='off' name='room_name' type='name'>
+    <input autocomplete='off' name='room_name' type='text' id='input_room_name'>
 
     <button type='submit' style='display: none'></button>
 </form>
+
+<script>
+    const socket = io();
+
+    const INPUT_BOX = document.getElementById("input_room_name");
+    const FORMS = document.getElementById("forms");
+
+    FORMS.addEventListener('submit', (e) => {
+        socket.emit(
+            'room_create',
+            {"room_name": INPUT_BOX.value}
+        );
+    });
+</script>
+
 {% endblock %}
