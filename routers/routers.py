@@ -13,6 +13,9 @@ main_routers = flask.Blueprint('main', __name__)
 def before_request()->None:
     if "user_name" in flask.request.cookies:
         flask.session["user_name"] = flask.request.cookies["user_name"]
+        return
+
+    flask.redirect('/')
 
 ###
 @main_routers.route('/')
@@ -38,7 +41,7 @@ def login_auth()->object:
 
     # result = user_insert(user_name, user_email, user_password)
     try:
-        result = user_insert(user_name, STATUS_ONLINE, user_email, user_password)
+        result = user_insert(user_name, user_email, STATUS_ONLINE, user_password)
     except sqlite3.OperationalError:
         flask.session["message"]="An error occurs..."
         return flask.redirect(flask.url_for('main.login_display'))
@@ -119,8 +122,9 @@ def room_create_auth()->object:
     result = 0
     try:
         result = room_insert(room_name, user_name)
-    except:
+    except Exception as e:
         flask.session["message"] = "An error occurs"
+        print('Room create ERRO: ', e)
         return flask.redirect(flask.url_for('main.room_create'))
 
     if result == 1:
