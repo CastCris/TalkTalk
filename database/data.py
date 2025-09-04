@@ -1,34 +1,23 @@
-import sqlite3
+from cast import *
+import sqlalchemy
 
-db = sqlite3.connect('data.db', check_same_thread=False)
-cursor = db.cursor()
+engine = sqlalchemy.create_engine("sqlite:///data.db", echo=True)
+Base.metadata.create_all(engine)
 
-def room_get()->set:
-    result = cursor.execute("""
-    SELECT name FROM room
-    """)
+Session = sqlalchemy.orm.sessionmaker(bind=engine)
+session = Session()
 
-    result = result.fetchall()
-    room_able = []
-    for i in result:
-        room_able.append(i[0])
+def room_get()->list:
+    room_able = [ room_name for (name,) in session.query(Room.name).all()]
 
     return room_able
 
 def room_insert(room_name: str, user_name: str)->int:
     room_avaible = room_get()
-    if room_name in room_avaible:
-        return 1
 
-
-    cursor.execute(
-        "INSERT INTO room VALUES(?, ?)",
-        (room_name, user_name)
-    )
-
-    db.commit()
-
-    return 0
+    room_new = Room(name=room_name, user_admin=user_name)
+    session.add(room_new)
+    session.commit()
 
 
 def user_insert(name:str, email:str, status:str, password: str)->int:
