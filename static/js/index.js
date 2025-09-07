@@ -76,8 +76,6 @@ function room_change(room_name_old, room_name_new){
 
 //
 socket.on('connect', () => {
-    room_change('index', socket.auth.serverRoom);
-
     clock_last = null;
 });
 

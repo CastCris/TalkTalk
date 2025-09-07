@@ -91,13 +91,12 @@ def data_recovery(room_name:str, message_offset:str)->None:
     flask_socketio.emit('room_recovery', {'rooms': rooms_needed})
 
 @socketio.on('connect')
-def handler_connect()->None:
+def handler_connect(auth)->None:
     global ROOM_INITIAL
     global ROOM_INITIAL_COUNTER
 
-    socket = flask.request.namespace
-    message_offset = flask.request.args.get('messageOffset', default=0, type=int)
-    server_room = flask.request.args.get('serverRoom', default='index', type=str)
+    message_offset = auth.get('messageOffset') if auth else 0
+    server_room = auth.get('serverRoom') if auth else 'index'
 
     ###
     user_ip = flask.request.remote_addr;
