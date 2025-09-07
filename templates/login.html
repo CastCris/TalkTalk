@@ -3,13 +3,13 @@
 {% block content %}
 <form method="POST" action="{{ url_for("main.login_auth") }}">
     <label>User name:</label>
-    <input type="text" autocomplete="off" name="user_name">
+    <input type="text" autocomplete="off" name="user_name" required>
 
     <label>User email:</label>
-    <input type="email" autocomplete="off" name="user_email">
+    <input type="email" autocomplete="off" name="user_email" required>
 
     <label>User password:</label>
-    <input type="text" autocomplete="off" name="user_password">
+    <input type="text" autocomplete="off" name="user_password" required>
 
     <button type='submit' style='display: none'></button>
 </form>

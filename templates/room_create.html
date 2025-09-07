@@ -2,7 +2,7 @@
 {% block content %}
 <form method="POST" id="forms" action="{{ url_for("main.room_create_auth") }}">
     <label>Room name</label>
-    <input autocomplete='off' name='room_name' type='text' id='input_room_name'>
+    <input autocomplete='off' name='room_name' type='text' id='input_room_name' required>
 
     <button type='submit' style='display: none'></button>
 </form>
