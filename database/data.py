@@ -1,5 +1,7 @@
-from cast import *
+# from casts import *
+from .casts import *
 import sqlalchemy
+import time
 
 engine = sqlalchemy.create_engine("sqlite:///data.db", echo=True)
 Base.metadata.create_all(engine)
@@ -8,81 +10,94 @@ Session = sqlalchemy.orm.sessionmaker(bind=engine)
 session = Session()
 
 def room_get()->list:
-    room_able = [ room_name for (name,) in session.query(Room.name).all()]
+    room_able = [ room_name[0] for room_name in session.query(Room.name).all()]
 
     return room_able
 
-def room_insert(room_name: str, user_name: str)->int:
-    room_avaible = room_get()
-
+def room_insert(room_name: str, user_name: str)->None:
     room_new = Room(name=room_name, user_admin=user_name)
     session.add(room_new)
     session.commit()
 
 
-def user_insert(name:str, email:str, status:str, password: str)->int:
-    result = cursor.execute(f"SELECT (name) FROM user WHERE (name = '{ name }')")
-    result = result.fetchone()
-    # print(result,'mil acasos me dizem o que sou')
+def user_get(user_name:str)->object:
+    try:
+        user = session.query(User).filter(User.name == user_name).first()
+    except:
+        return None
 
-    if result:
-        return 1
+    return user
 
-    cursor.execute(
-        "INSERT INTO user VALUES(?, ?, ?, ?, ?)",
-        (name, email, status, password, 0)
-    )
+def user_insert(name:str, email:str, status:str, password: str)->None:
+    user_new = User(name=name, email=email, status=status, password=password, connections=0)
 
-    db.commit()
+    session.add(user_new)
+    session.commit()
 
-    return 0
+def user_status_update(user_name:str, status_new:str)->None:
+    user = user_get(user_name)
+    if not user:
+        return
 
-def user_status_update(user_name:str, status_new:str)->object:
-    result = cursor.execute(
-        "UPDATE user SET status = ? WHERE name = ?",
-        (status_new, user_name)
-    )
+    user.status = status_new
 
-    db.commit()
+    session.commit()
 
-    return result
+def user_connections_add(user_name:str)->None:
+    user = user_get(user_name)
+    if not user:
+        return
 
-def user_connections_add(user_name:str)->object:
-    result = cursor.execute(
-        "UPDATE user SET connections = connections + 1 WHERE name = ?",
-        (user_name, )
-    )
+    user.connections += 1
 
-    return result
+    session.commit()
 
-def user_connections_minus(user_name:str)->object:
-    result = cursor.execute(
-        "UPDATE user SET connections = connections - 1 WHERE name = ?",
-        (user_name, )
-    )
+def user_connections_minus(user_name:str)->None:
+    user = user_get(user_name)
+    if not user:
+        return
 
-    return result
+    user.connections -= 1
 
-def user_connections_get(user_name:str)->object:
-    result = cursor.execute(
-        "SELECT connections FROM user WHERE name = ?",
-        (user_name, )
-    )
+    session.commit()
 
-    result = result.fetchone()
-
-    if not result:
+def user_connections_get(user_name:str)->int:
+    user = user_get(user_name)
+    if not user:
         return 0
-    return result[0]
+
+    return user.connections
 
 
-def message_insert(message_id:str, content:str, user_name:str, room_name:str)->object:
-    print(message_id, content, room_name)
-    result = cursor.execute(
-        "INSERT INTO message VALUES(?, (SELECT unixepoch()), ?, ?, ?)",
-        (message_id, user_name, room_name, content, )
-    )
+def message_insert(message_id:str, content:str, user_name:str, room_name:str)->None:
+    message_new = Message(id=message_id, date=time.time(), user_name=user_name, room_name=room_name, content=content)
+    session.add(message_new)
 
-    db.commit()
-    
-    return result
+    session.commit()
+
+def message_fetch(date_offset:int, room_name:str)->set:
+    messages = session.query(Message.content, Message.date, Message.user_name) \
+            .filter(Message.date > date_offset, Message.room_name == room_name) \
+            .all()
+
+    messages_list = [message for message in messages]
+
+    return messages
+
+"""
+try:
+    user_insert("Agnaldo", "abcd@gmail.com", "online", "password")
+except sqlalchemy.exc.IntegrityError:
+    session.rollback()
+    print("This user already exists!")
+
+jose = user_get("Jose")
+agnaldo = user_get("Agnaldo")
+
+print(jose,'-')
+print(agnaldo.name,'-')
+print(user_connections_get("Agnaldo"))
+
+result = session.query(User.name, User.status).all()
+print(type(result[0]))
+"""

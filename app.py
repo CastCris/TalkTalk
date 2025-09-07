@@ -27,78 +27,15 @@ MESSAGE_SCROLLOFF = 25
 
 SUPER_ADMIN = 'super_admin'
 
-# PRAGMA
-cursor.execute("""
-    PRAGMA foreign_keys = ON;
-""")
-
-# user
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS user (
-        name VARCHAR(80) PRIMARY KEY,
-        email VARCHAR(254),
-        status VARCHAR(50),
-        password VARCHAR(50),
-
-        connections INTEGER
-    );
-""")
-
-# room
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS room (
-        name VARCHAR(100) PRIMARY KEY,
-        user_admin VARCHAR(80),
-
-        CONSTRAINT FK_user_admin
-            FOREIGN KEY(user_admin) REFERENCES user(name)
-    );
-"""
-)
-
-# message
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS message(
-        id CHAR(20) PRIMARY KEY,
-        data REAL,
-
-        user_name VARCHAR(80),
-        room_name VARCHAR(80),
-
-        content VARCHAR,
-
-        CONSTRAINT FK_room_name
-            FOREIGN KEY(room_name) REFERENCES room(name)
-    );
-""")
-db.commit()
-
 try:
     user_insert(SUPER_ADMIN, 'thisemaildoesntexists@email', STATUS_DIE, '')
     room_insert(ROOM_INITIAL, SUPER_ADMIN)
 except Exception as e:
+    session.rollback()
     print('Setup server error: ',e)
 
 
 ###
-def room_fetch()->set:
-    rooms = cursor.execute("""
-    SELECT name FROM room
-    """)
-
-    rooms = rooms.fetchall()
-
-    return rooms
-
-def message_fetch(date_offset:int, room_name:str)->set:
-    messages = cursor.execute(f"""
-    SELECT content, data, user_name FROM message WHERE data > { date_offset } AND room_name = '{ room_name }'
-    """)
-
-    messages = messages.fetchall()
-
-    return messages
-
 def message_send_room(message_content:str, message_offset:list, user_name:str, room_name:str)->None:
     flask_socketio.emit(
             'message',
@@ -127,25 +64,27 @@ def data_recovery(room_name:str, message_offset:str)->None:
     rooms_needed = None
     message_needed = None
     
-    # rooms_needed = room_fetch()
+    # rooms_needed = room_get()
     # message_needed  = message_fetch(message_offset, room_name)
     try:
-        rooms_needed = room_fetch()
+        rooms_needed = room_get()
         message_needed  = message_fetch(message_offset, room_name)
     except Exception as e:
         message_needed = [("Error in message recovery", 0, SUPER_ADMIN)]
         rooms_needed = ["Error in rooms recovery"]
+        session.rollback()
 
-        print('Data_recovery ERROR: \n'+e)
+        print('Data_recovery ERROR: \n', e)
         return
 
-    print(message_needed,'inteligencia visionaria')
+    print('message_needed: ', message_needed)
+    print('rooms_needed: ', rooms_needed)
     for i in message_needed:
         message_content = i[0]
         message_offset = i[1]
         message_user = i[2]
 
-        # print(i)
+        print(i)
 
         message_send(message_content, message_offset, message_user)
 
@@ -237,7 +176,7 @@ def room_create_handler(data)->None:
     room_name = data["room_name"]
     room_able = room_get()
 
-    print(room_able)
+    print('room_able: ', room_able)
     room_able.append(room_name)
     room_able.sort()
 
@@ -265,7 +204,7 @@ def handler_message(data)->None:
     message_content = data["message_content"]
     message_id = data["message_id"]
 
-    print(data)
+    print('message: ',data)
 
     room_name = data["room"]
     user_name = flask.request.cookies["user_name"]
@@ -277,8 +216,8 @@ def handler_message(data)->None:
         print('Message error: ', e)
         return
 
-    message_date = cursor.execute(f"SELECT data FROM message WHERE id = '{ message_id }'")
-    message_date = message_date.fetchall()
+    message_date = session.query(Message.date).filter(Message.id == message_id).first()[0]
+    print('message_date: ', message_date)
     #
 
     message_send_room(message_content, message_date, user_name, room_name)

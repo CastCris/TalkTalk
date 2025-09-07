@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Integer, Float, CHAR, ForeignKey
 from .base import Base
-from .User import User
-from .Room import Room
+from .User import *
+from .Room import *
 
 MESSAGE_ID_LEN = 20
 MESSAGE_CONTENT_LEN = 2000
@@ -9,7 +9,7 @@ MESSAGE_CONTENT_LEN = 2000
 class Message(Base):
     __tablename__ = 'Message'
 
-    id = Column(CHAR(MESSAGE_ID_LEN))
+    id = Column(CHAR(MESSAGE_ID_LEN), primary_key=True)
     date = Column(Float)
 
     user_name = Column(String(USER_NAME_LEN), ForeignKey('User.name'))

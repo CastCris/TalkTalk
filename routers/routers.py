@@ -1,5 +1,5 @@
 import flask
-import sqlite3
+import sqlalchemy
 from database import *
 
 STATUS_DIE = 'die'
@@ -42,14 +42,16 @@ def login_auth()->object:
     # result = user_insert(user_name, user_email, user_password)
     try:
         result = user_insert(user_name, user_email, STATUS_ONLINE, user_password)
-    except sqlite3.OperationalError:
-        flask.session["message"]="An error occurs..."
-        return flask.redirect(flask.url_for('main.login_display'))
-
-    if result == 1:
+    except sqlalchemy.exc.IntegrityError:
         flask.session["message"]="Unavailable user name"
-        return flask.redirect(flask.url_for('main.login_display'))
+        session.rollback()
 
+        return flask.redirect(flask.url_for('main.login_display'))
+    except:
+        flask.session["message"]="An error occurs..."
+        session.rollback()
+
+        return flask.redirect(flask.url_for('main.login_display'))
 
     flask.session['message'] = ''
     flask.session['user_name'] = user_name
@@ -72,20 +74,19 @@ def sign_auth()->object:
     user_name = flask.request.form['user_name']
     user_password = flask.request.form['user_password']
 
-    result = cursor.execute(f"SELECT name, password, status FROM user WHERE name = '{ user_name }'")
+    result = session.query(User.name, User.password, User.status).filter(User.name == user_name).first()
     # print(result,'-')
-    rows = result.fetchone()
+    print(result)
 
-    if not rows:
+    if not result:
         flask.session['message'] = "Unavaible user name"
         return flask.redirect(flask.url_for('main.sign_display'))
 
-    if rows[2]==STATUS_DIE:
+    if result[2]==STATUS_DIE:
         flask.session['message'] = "This user is unactive"
         return flask.redirect(flask.url_for('main.sign_display'))
 
-    print(rows)
-    if rows[1] != user_password:
+    if result[1] != user_password:
         flask.session['message'] = "Incorrect password"
         return flask.redirect(flask.url_for('main.sign_display'))
 
@@ -119,16 +120,18 @@ def room_create_auth()->object:
     room_name = flask.request.form['room_name']
     user_name = flask.request.cookies["user_name"]
 
-    result = 0
     try:
         result = room_insert(room_name, user_name)
+    except sqlalchemy.exc.IntegrityError:
+        flask.session["message"] = "Room name already exists"
+        session.rollback()
+
+        return flask.redirect(flask.url_for('main.room_create'))
     except Exception as e:
         flask.session["message"] = "An error occurs"
+        session.rollback()
         print('Room create ERRO: ', e)
-        return flask.redirect(flask.url_for('main.room_create'))
 
-    if result == 1:
-        flask.session["message"] = "Room name already exists"
         return flask.redirect(flask.url_for('main.room_create'))
 
     flask.session["message"]=''

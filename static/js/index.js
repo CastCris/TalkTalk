@@ -1,9 +1,12 @@
 const socket = io({
     auth:{
         messageOffset: 0,
-        serverRoom: 'index',
+        serverRoom: [ sessionStorage.getItem('room') || 'index'][0],
     }
 });
+
+console.log(socket.auth.serverRoom)
+
 const socket_id = crypto.getRandomValues(new Uint32Array(1))[0];
 let socket_id_counter = 0;
 
@@ -56,9 +59,25 @@ function label_time_add(time_curr, time_prev){
     ` + OUTPUT_BOX.innerHTML;
 }
 
+function room_change(room_name_old, room_name_new){
+    OUTPUT_BOX.innerHTML = '';
+    ROOMS_ABLE.innerHTML = '';
+
+    socket.auth.serverRoom = room_name_new;
+
+    socket.emit('room_change',{
+        "room_name_old": room_name_old,
+        "room_name_new": room_name_new
+    });
+    
+    sessionStorage.setItem('room', room_name_new);
+}
+
 
 //
 socket.on('connect', () => {
+    room_change('index', socket.auth.serverRoom);
+
     clock_last = null;
 });
 
@@ -94,7 +113,7 @@ socket.on('room_recovery', (data) => {
     for(var i=0;i<rooms.length;++i){
         ROOMS_ABLE.innerHTML += `
             <li>
-                <button onclick='room_change(this)' id='room_name_${rooms[i]}'> ${rooms[i]} </button>
+                <button onclick='room_change_button(this)' id='room_name_${rooms[i]}'> ${rooms[i]} </button>
             </li>`;
     }
 });
@@ -106,7 +125,7 @@ socket.on('room_create', (data) => {
     for(var i=0;i<rooms.length;++i){
         ROOMS_ABLE.innerHTML += `
             <li>
-                <button onclick='room_change(this)' id='room_name_${rooms[i]}'> ${rooms[i]} </button>
+                <button onclick='room_change_button(this)' id='room_name_${rooms[i]}'> ${rooms[i]} </button>
             </li>`;
     }
 });
@@ -127,17 +146,9 @@ FORMS.addEventListener('submit', (e) => {
     ++socket_id_counter;
 });
 
-function room_change(button){
+function room_change_button(button){
     const room_name_new = button.id.split('room_name_')[1]
     const room_name_old = socket.auth.serverRoom;
-
-    OUTPUT_BOX.innerHTML = '';
-    ROOMS_ABLE.innerHTML = '';
     
-    socket.auth.serverRoom = room_name_new;
-
-    socket.emit('room_change',{
-        "room_name_old": room_name_old,
-        "room_name_new": room_name_new
-    });
+    room_change(room_name_old, room_name_new);
 }

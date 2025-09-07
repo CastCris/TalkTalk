@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, ForeignKey
 from .base import Base
-from .User import User
+from .User import *
 
 ROOM_NAME_LEN = 100
 
