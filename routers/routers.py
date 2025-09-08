@@ -1,6 +1,14 @@
+import os
 import flask
+
+import hmac
+import hashlib
+
 import sqlalchemy
 from database import *
+
+SECRET_KEY_LEN = 26
+SECRET_KEY = os.urandom(SECRET_KEY_LEN)
 
 STATUS_DIE = 'die'
 STATUS_ONLINE = 'online'
@@ -8,14 +16,31 @@ STATUS_OFFLINE = 'offline'
 
 main_routers = flask.Blueprint('main', __name__)
 
+"""
+def cookie_hash_get(cookie_value:str)->object:
+    return hmac.new(SECRET_KEY, value.encode(), hashlib.sha256).hexdigest()
+
+def cookie_set(cookie_object:object, cookie_name:str, cookie_value)->None:
+    cookie_value_hash = cookie_hash_get(cookie_value)
+    cookie_object.set_cookie(cookie_name, cookie_value_hash, secure=True, httponly=True, samesite='Strict')
+"""
+
 ###
 @main_routers.before_request
 def before_request()->None:
+    user_name = None
     if "user_name" in flask.request.cookies:
+        user_name = flask.request.cookies["user_name"]
+
+    user = None
+    try:
+        user = user_get(user_name)
+    except sqlalchemy.exc.OperationalError:
+        pass
+
+    if user_name and user:
         flask.session["user_name"] = flask.request.cookies["user_name"]
         return
-
-    flask.redirect('/')
 
 ###
 @main_routers.route('/')
@@ -57,7 +82,7 @@ def login_auth()->object:
     flask.session['user_name'] = user_name
 
     response = flask.make_response(flask.redirect('/'))
-    response.set_cookie('user_name', user_name)
+    response.set_cookie('user_name', user_name, secure=True, httponly=True, )
 
     return response
 

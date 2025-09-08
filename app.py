@@ -1,6 +1,7 @@
-import os
 import flask
 import flask_socketio
+
+import sqlalchemy
 
 import string
 import secrets
@@ -8,24 +9,24 @@ import secrets
 from database import *
 from routers import *
 
-SECRET_KEY_LEN = 26
-
 ###
 app = flask.Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(SECRET_KEY_LEN)
+app.config['SECRET_KEY'] = SECRET_KEY
 app.register_blueprint(main_routers)
 
 socketio = flask_socketio.SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+socket_data = {}
 
 
 ROOM_INITIAL = 'index'
-ROOM_INITIAL_CLIENT_OFFSET = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
-ROOM_INITIAL_COUNTER = 0
+
+SYSTEM_MESSAGE_OFFSET = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
+SYSTEM_MESSAGE_OFFSET_COUNT  = 0
+
+SUPER_ADMIN = 'super_admin'
 
 MESSAGE_MAX = 500
 MESSAGE_SCROLLOFF = 25
-
-SUPER_ADMIN = 'super_admin'
 
 try:
     user_insert(SUPER_ADMIN, 'thisemaildoesntexists@email', STATUS_DIE, '')
@@ -34,8 +35,32 @@ except Exception as e:
     session.rollback()
     print('Setup server error: ',e)
 
-
 ###
+def message_server_id()->str:
+    global SYSTEM_MESSAGE_OFFSET_COUNT 
+    global SYSTEM_MESSAGE_OFFSET
+
+    SYSTEM_MESSAGE_OFFSET_COUNT += 1
+
+    return SYSTEM_MESSAGE_OFFSET+str(SYSTEM_MESSAGE_OFFSET_COUNT)
+
+
+def message_insert_system(message_content:str, room_name:str)->None:
+    message_id = message_server_id()
+    message_insert(message_id, message_content, SUPER_ADMIN, room_name)
+
+
+def message_send_user(message_content:str, message_offset:str, user_name:str)->None:
+    flask_socketio.emit(
+            'message',
+            {
+                'message_content': message_content,
+                'message_offset': message_offset,
+
+                'user_name': user_name
+            }
+    )
+
 def message_send_room(message_content:str, message_offset:list, user_name:str, room_name:str)->None:
     flask_socketio.emit(
             'message',
@@ -48,16 +73,20 @@ def message_send_room(message_content:str, message_offset:list, user_name:str, r
             to = room_name
     )
 
-def message_send(message_content, message_offset, user_name)->None:
-    flask_socketio.emit(
-            'message',
-            {
-                'message_content': message_content,
-                'message_offset': message_offset,
+def message_send_system(message_content:str, room_name:str)->None:
+    message_id = message_server_id()
+    try:
+        message_insert(message_id, message_content, SUPER_ADMIN, room_name)
+    except sqlalchemy.exc.IntegrityError:
+        flask_socketio.emit('user_invalid')
+        print('Message send system ERROR: ', e)
+        return
+    except Exception as e:
+        print('Message send system ERROR: ', e)
 
-                'user_name': user_name
-            }
-    )
+    message_date = message_date_get(message_id)
+
+    message_send_room(message_content, message_date, SUPER_ADMIN, room_name)
 
 ##
 def data_recovery(room_name:str, message_offset:str)->None:
@@ -86,89 +115,152 @@ def data_recovery(room_name:str, message_offset:str)->None:
 
         print(i)
 
-        message_send(message_content, message_offset, message_user)
+        message_send_user(message_content, message_offset, message_user)
 
     flask_socketio.emit('room_recovery', {'rooms': rooms_needed})
 
 @socketio.on('connect')
 def handler_connect(auth)->None:
-    global ROOM_INITIAL
-    global ROOM_INITIAL_COUNTER
-
+    print('*******')
+    socket_id = flask.request.sid
     message_offset = auth.get('messageOffset') if auth else 0
     server_room = auth.get('serverRoom') if auth else 'index'
 
+    if not socket_id in socket_data:
+        socket_data[socket_id] = {}
+
+    room_able = []
+    try:
+        room_able = room_get()
+    except sqlalchemy.exc.OperationalError as e:
+        flask_socektio.emit('user_invalid')
+        print('Connect Error: ', e)
+
+        return
+
+    if not server_room in room_able:
+        server_room = ROOM_INITIAL
+
+        flask_socketio.emit('room_change',{
+            "room": server_room
+        })
+
     ###
     user_ip = flask.request.remote_addr;
-    user_name = flask.request.cookies["user_name"];
+    user_name = flask.request.cookies.get("user_name", None);
     user_connections = user_connections_get(user_name)
+
+    print('user_get: ', user_get(user_name))
+
+    if not user_name or not user_get(user_name):
+        flask_socketio.emit('user_invalid')
+        return
+
+    print('user_name: ', user_name)
 
     user_connections_add(user_name)
     user_status_update(user_name, STATUS_ONLINE)
 
     ###
-    message = f"User connection: { user_name }, { user_ip }"
+    message_index = f"User connection: { user_name }, { user_ip }"
     if user_connections:
-        message = f"User connection device: { user_name }, { user_ip }"
+        message_index = f"User connection device: { user_name }, { user_ip }"
+    
+    message_room = f"User { user_name } join to room"
 
-    handler_message({
-        'message_content' : message,
-        'message_id' : ROOM_INITIAL_CLIENT_OFFSET+str(ROOM_INITIAL_COUNTER),
-        'user_name' : SUPER_ADMIN,
+    message_send_system(message_index, ROOM_INITIAL)
 
-        'room' : ROOM_INITIAL
+    room_join({
+        "room": server_room
     })
-
-    ROOM_INITIAL_COUNTER += 1
-
-    flask_socketio.join_room(server_room)
 
     data_recovery(server_room, message_offset)
 
 @socketio.on('disconnect')
 def handler_disconnect()->None:
-    global ROOM_INITIAL_CLIENT_OFFSET
-    global ROOM_INITIAL_COUNTER
+    socket_id = flask.request.sid
+    server_room = socket_data[socket_id]["room"]
 
+    #
     user_ip = flask.request.remote_addr;
-    user_name = flask.request.cookies["user_name"]
-    user_connections = user_connections_get(user_name)
+    user_name = flask.request.cookies.get("user_name", None)
 
+    if not user_name:
+        flask_socketio.emit('user_invalid')
+        return
+
+    user_connections = user_connections_get(user_name)
     user_connections_minus(user_name)
 
-    message = f"User disconnect: { user_name }, { user_ip }"
-    if user_connections > 1:
-        message = f"User disconnect device: { user_name }, { user_ip }"
-
-    handler_message({
-        'message_content' : message,
-        'message_id': ROOM_INITIAL_CLIENT_OFFSET+str(ROOM_INITIAL_COUNTER),
-        'user_name': SUPER_ADMIN,
-
-        'room' : ROOM_INITIAL
+    room_leave({
+        "room": server_room
     })
 
-    user_status_update(user_name, STATUS_OFFLINE)
+    message_index = f"User disconnect: { user_name }, { user_ip }"
+    if user_connections > 1:
+        message_index = f"User disconnect device: { user_name }, { user_ip }"
 
-    ROOM_INITIAL_COUNTER += 1
+    message_send_system(message_index, ROOM_INITIAL)
+    message_room = f"User { user_name } leave the room"
+    # print('disconnect message index: ', message_index)
 
-@socketio.on('room_join')
+
+    if user_connections == 1:
+        user_status_update(user_name, STATUS_OFFLINE)
+
+#
 def room_join(data)->None:
     room_name = data["room"]
+    user_name = flask.request.cookies["user_name"]
+
+    socket_id = flask.request.sid
     if not room_name:
         return
 
-    flask_socketio.join_room(room_name)
-    flask_socketio.emit(
-            'room_joined',
-            {"room_name": room_name}
-    )
+    message_content = f"User { user_name } joined to this room"+room_name
+    message_send_system(message_content, room_name)
 
-@socketio.on('room_recovery')
+    socket_data[socket_id]["room"] = room_name
+
+    flask_socketio.join_room(room_name)
+
+def room_leave(data)->None:
+    room_name = data["room"]
+    user_name = flask.request.cookies["user_name"]
+    if not room_name:
+        return
+
+    message_content = f"User { user_name } get out of this room"+room_name
+    message_send_system(message_content, room_name)
+
+    flask_socketio.leave_room(room_name)
+
 def room_recovery(rooms:list)->None:
     rooms_copy = rooms.copy()
     rooms_copy.sort()
     flask_socketio.emit('room_recovery', rooms_copy)
+
+
+@socketio.on('room_change')
+def room_change(data)->None:
+    room_name_old = data["room_name_old"]
+    room_name_new = data["room_name_new"]
+
+    print('room_name_old: ', room_name_old)
+    print('room_name_new: ', room_name_new)
+
+    room_leave({
+        "room": room_name_old
+    })
+
+    flask_socketio.emit('output_clean')
+    flask_socketio.emit('output_room_clean');
+
+    room_join({
+        "room": room_name_new
+    })
+
+    data_recovery(room_name_new, 0)
 
 @socketio.on('room_create')
 def room_create_handler(data)->None:
@@ -187,17 +279,8 @@ def room_create_handler(data)->None:
         broadcast = True
     )
 
-@socketio.on('room_change')
-def room_change(data)->None:
-    room_name_old = data["room_name_old"]
-    room_name_new = data["room_name_new"]
 
-    flask_socketio.leave_room(room_name_old)
-    flask_socketio.join_room(room_name_new)
-
-    data_recovery(room_name_new, 0)
-
-
+##
 @socketio.on('message')
 def handler_message(data)->None:
     message_content = data["message_content"]
@@ -210,12 +293,20 @@ def handler_message(data)->None:
 
     try:
         message_insert(message_id, message_content, user_name, room_name) 
+    except sqlalchemy.exc.IntegrityError as e:
+        flask_socketio.emit('user_invalid')
+        print('Handler_message Error: ', e)
+
+        return
     except Exception as e:
         message_content = "Error in message loading"
-        print('Message error: ', e)
+        session.rollback()
+
+        print('Handler_mesaage Error: ', e)
+
         return
 
-    message_date = session.query(Message.date).filter(Message.id == message_id).first()[0]
+    message_date = message_date_get(message_id)
     print('message_date: ', message_date)
     #
 

@@ -1,11 +1,21 @@
+const BOX_DATA_UPDATE_ID = 'data_update';
+const BOX_DATA_ID = 'data';
+
+const BOX_MESSAGE_ID = 'message';
+const BOX_MESSAGE_CONTENT_ID = 'message_content';
+const BOX_MESSAGE_TIME_ID = 'message_time';
+const BOX_MESSAGE_USER_ID = 'message_user';
+
+const BOX_ROOM_BUTTON_ID = 'room_name_';
+
+//
 const socket = io({
     auth:{
         messageOffset: 0,
-        serverRoom: [ sessionStorage.getItem('room') || 'index'][0],
+
+        serverRoom: [ sessionStorage.getItem('serverRoom') || 'index'][0]
     }
 });
-
-console.log(socket.auth.serverRoom)
 
 const socket_id = crypto.getRandomValues(new Uint32Array(1))[0];
 let socket_id_counter = 0;
@@ -53,16 +63,13 @@ function label_time_add(time_curr, time_prev){
     // console.log(time_prev);
 
     OUTPUT_BOX.innerHTML = ` 
-    <div class="update_data">
-        <h2 class="data">${time_prev["day"]}/${time_prev["month"]}/${time_prev["year"]}</h2>
+    <div id="${BOX_DATA_UPDATE_ID}">
+        <h2 id="${BOX_DATA_ID}">${time_prev["day"]}/${time_prev["month"]}/${time_prev["year"]}</h2>
     </div>
     ` + OUTPUT_BOX.innerHTML;
 }
 
 function room_change(room_name_old, room_name_new){
-    OUTPUT_BOX.innerHTML = '';
-    ROOMS_ABLE.innerHTML = '';
-
     socket.auth.serverRoom = room_name_new;
 
     socket.emit('room_change',{
@@ -70,7 +77,7 @@ function room_change(room_name_old, room_name_new){
         "room_name_new": room_name_new
     });
     
-    sessionStorage.setItem('room', room_name_new);
+    sessionStorage.setItem('serverRoom', room_name_new);
 }
 
 
@@ -91,17 +98,27 @@ socket.on('message', (data) => {
     label_time_add(clock, clock_last);
 
     OUTPUT_BOX.innerHTML = `
-        <div class="message">
-            <p class="message_content">${message}</p>
-            <span class="message_time">${clock["hours"]}:${clock["minutes"]}:${clock["seconds"]}</span>
+        <div id="${BOX_MESSAGE_ID}">
+            <p id="${BOX_MESSAGE_CONTENT_ID}">${message}</p>
+            <span id="${BOX_MESSAGE_TIME_ID}">${clock["hours"]}:${clock["minutes"]}:${clock["seconds"]}</span>
             <span>--</span>
-            <span class="message_user">${user_name}</span>
+            <span id="${BOX_MESSAGE_USER_ID}">${user_name}</span>
         </div>
         <br>
     ` + OUTPUT_BOX.innerHTML;
 
-    socket.auth.serverOffset = serverDataOffset
+    socket.auth.serverOffset = serverDataOffset;
     clock_last = clock;
+
+    sessionStorage.setItem('messageOffset', socket.auth.serverOffset);
+});
+
+socket.on('output_clean', () => {
+    OUTPUT_BOX.innerHTML = '';
+});
+
+socket.on('output_room_clean', () => {
+    ROOMS_ABLE.innerHTML = '';
 });
 
 socket.on('room_recovery', (data) => {
@@ -111,9 +128,21 @@ socket.on('room_recovery', (data) => {
     for(var i=0;i<rooms.length;++i){
         ROOMS_ABLE.innerHTML += `
             <li>
-                <button onclick='room_change_button(this)' id='room_name_${rooms[i]}'> ${rooms[i]} </button>
+                <button onclick='room_change_button(this)' id='${BOX_ROOM_BUTTON_ID}${rooms[i]}'> ${rooms[i]} </button>
             </li>`;
     }
+});
+
+socket.on('room_joined', (data) => {
+    const room_name = data["room"];
+
+    room_button = document.getElementById("room_name_"+room_name);
+});
+
+socket.on('room_change', (data) => {
+    const room_name = data["room"];
+
+    socket.auth.serverRoom = room_name
 });
 
 socket.on('room_create', (data) => {
@@ -127,6 +156,13 @@ socket.on('room_create', (data) => {
             </li>`;
     }
 });
+
+
+socket.on('user_invalid', () => {
+    console.log('AAAAAA');
+    OUTPUT_BOX.innerHTML = '<p>Hey! Looks that you are using a invalid user name, for some reason. Please, sign with other account or create a new</p>';
+})
+
 
 //
 FORMS.addEventListener('submit', (e) => {
@@ -145,7 +181,7 @@ FORMS.addEventListener('submit', (e) => {
 });
 
 function room_change_button(button){
-    const room_name_new = button.id.split('room_name_')[1]
+    const room_name_new = button.id.split(BOX_ROOM_BUTTON_ID)[1]
     const room_name_old = socket.auth.serverRoom;
     
     room_change(room_name_old, room_name_new);

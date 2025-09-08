@@ -3,7 +3,13 @@ from .casts import *
 import sqlalchemy
 import time
 
+def foreign_key_enable(conn, branch)->None:
+    conn.execute('PRAGMA foreign_keys = ON')
+
 engine = sqlalchemy.create_engine("sqlite:///data.db", echo=True)
+
+sqlalchemy.event.listen(engine, 'connect', foreign_key_enable)
+
 Base.metadata.create_all(engine)
 
 Session = sqlalchemy.orm.sessionmaker(bind=engine)
@@ -24,6 +30,7 @@ def user_get(user_name:str)->object:
     try:
         user = session.query(User).filter(User.name == user_name).first()
     except:
+        session.rollback()
         return None
 
     return user
@@ -83,6 +90,11 @@ def message_fetch(date_offset:int, room_name:str)->set:
     messages_list = [message for message in messages]
 
     return messages
+
+def message_date_get(message_id:str)->float:
+    message_offset = session.query(Message.date).filter(Message.id == message_id).first()[0]
+
+    return message_offset
 
 """
 try:
