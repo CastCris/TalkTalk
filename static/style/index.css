@@ -11,6 +11,16 @@ main{
     overflow-y: scroll;
 }
 
+.room_selected{
+    background-color: white;
+    color: black;
+}
+
+.room_unselected{
+    background-color: black;
+    color: white;
+}
+
 #chat_forms{
     width: 50vw;
 }
@@ -23,3 +33,4 @@ main{
     overflow-y: scroll;
     height: 100vh;
 }
+

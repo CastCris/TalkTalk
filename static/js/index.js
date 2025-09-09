@@ -12,8 +12,9 @@ const BOX_ROOM_BUTTON_ID = 'room_name_';
 const socket = io({
     auth:{
         messageOffset: 0,
+        serverRoom: [ sessionStorage.getItem('serverRoom') || 'index'][0],
 
-        serverRoom: [ sessionStorage.getItem('serverRoom') || 'index'][0]
+        typeConnection: "room"
     }
 });
 
@@ -128,31 +129,49 @@ socket.on('room_recovery', (data) => {
     for(var i=0;i<rooms.length;++i){
         ROOMS_ABLE.innerHTML += `
             <li>
-                <button onclick='room_change_button(this)' id='${BOX_ROOM_BUTTON_ID}${rooms[i]}'> ${rooms[i]} </button>
+                <button onclick='room_change_button(this)'
+                id='${BOX_ROOM_BUTTON_ID}${rooms[i]}'
+                class="room_unselected"
+                > ${rooms[i]} </button>
             </li>`;
+        console.log(rooms[i]);
     }
 });
 
 socket.on('room_joined', (data) => {
     const room_name = data["room"];
 
-    room_button = document.getElementById("room_name_"+room_name);
+    room_button = document.getElementById(BOX_ROOM_BUTTON_ID+room_name);
+    room_button.className = "room_selected";
+    console.log(room_name, room_button.className);
 });
 
-socket.on('room_change', (data) => {
+socket.on('room_leaved', (data) => {
     const room_name = data["room"];
 
-    socket.auth.serverRoom = room_name
+    room_button = document.getElementById(BOX_ROOM_BUTTON_ID+room_name);
+    console.log(room_button);
+    room_button.className = "room_unselected";
 });
 
 socket.on('room_create', (data) => {
     ROOMS_ABLE.innerHTML = '';
 
-    rooms = data["room_able"]
+    const rooms = data["room_able"]
     for(var i=0;i<rooms.length;++i){
+        const room_name = rooms[i];
+
+        let room_button_class = 'room_unselected';
+        if(room_name == socket.auth.serverRoom)
+            room_button_class = 'room_selected';
+
+        
         ROOMS_ABLE.innerHTML += `
             <li>
-                <button onclick='room_change_button(this)' id='room_name_${rooms[i]}'> ${rooms[i]} </button>
+                <button onclick='room_change_button(this)'
+                id='room_name_${rooms[i]}'
+                class="${room_button_class}"
+                > ${room_name} </button>
             </li>`;
     }
 });

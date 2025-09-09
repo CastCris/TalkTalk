@@ -9,6 +9,8 @@ import secrets
 from database import *
 from routers import *
 
+import time
+
 ###
 app = flask.Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -119,9 +121,8 @@ def data_recovery(room_name:str, message_offset:str)->None:
 
     flask_socketio.emit('room_recovery', {'rooms': rooms_needed})
 
-@socketio.on('connect')
-def handler_connect(auth)->None:
-    print('*******')
+
+def connect_room(auth:object)->None:
     socket_id = flask.request.sid
     message_offset = auth.get('messageOffset') if auth else 0
     server_room = auth.get('serverRoom') if auth else 'index'
@@ -170,11 +171,23 @@ def handler_connect(auth)->None:
 
     message_send_system(message_index, ROOM_INITIAL)
 
+    ###
     room_join({
-        "room": server_room
+        "room": server_room,
+        "message_offset": message_offset
     })
 
-    data_recovery(server_room, message_offset)
+def connect_room_manager()->None:
+    pass
+
+
+@socketio.on('connect')
+def handler_connect(auth:object)->None:
+    connection_type = auth.get("typeConnection", "null")
+
+    if connection_type == "room":
+        connect_room(auth)
+
 
 @socketio.on('disconnect')
 def handler_disconnect()->None:
@@ -208,21 +221,35 @@ def handler_disconnect()->None:
     if user_connections == 1:
         user_status_update(user_name, STATUS_OFFLINE)
 
-#
+###
 def room_join(data)->None:
     room_name = data["room"]
     user_name = flask.request.cookies["user_name"]
+
+    message_offset = data.get("message_offset", 0)
 
     socket_id = flask.request.sid
     if not room_name:
         return
 
-    message_content = f"User { user_name } joined to this room"+room_name
+    message_content = f"User { user_name } joined to this room" # +room_name
     message_send_system(message_content, room_name)
 
     socket_data[socket_id]["room"] = room_name
 
     flask_socketio.join_room(room_name)
+
+    #
+    flask_socketio.emit('output_clean')
+    flask_socketio.emit('output_room_clean');
+
+    #
+    data_recovery(room_name, message_offset)
+
+    flask_socketio.emit('room_joined', {
+        "room": room_name
+    })
+
 
 def room_leave(data)->None:
     room_name = data["room"]
@@ -230,8 +257,12 @@ def room_leave(data)->None:
     if not room_name:
         return
 
-    message_content = f"User { user_name } get out of this room"+room_name
+    message_content = f"User { user_name } get out of this room" # +room_name
     message_send_system(message_content, room_name)
+
+    flask_socketio.emit('room_leaved', {
+        "room": room_name
+    })
 
     flask_socketio.leave_room(room_name)
 
@@ -253,14 +284,10 @@ def room_change(data)->None:
         "room": room_name_old
     })
 
-    flask_socketio.emit('output_clean')
-    flask_socketio.emit('output_room_clean');
-
     room_join({
         "room": room_name_new
     })
 
-    data_recovery(room_name_new, 0)
 
 @socketio.on('room_create')
 def room_create_handler(data)->None:
@@ -274,7 +301,7 @@ def room_create_handler(data)->None:
     flask_socketio.emit(
         'room_create',
         {
-            "room_able": room_able,
+            "room_able": room_able
         },
         broadcast = True
     )

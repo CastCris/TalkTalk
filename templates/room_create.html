@@ -8,7 +8,11 @@
 </form>
 
 <script>
-    const socket = io();
+    const socket = io({
+        auth:{
+            typeConnection: "room_manager"
+        }
+    });
 
     const INPUT_BOX = document.getElementById("input_room_name");
     const FORMS = document.getElementById("forms");
