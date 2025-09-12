@@ -12,14 +12,25 @@
     <ul id="rooms_able"></ul>
 </div>
 
-<div id="chat">
-    <form id="chat_forms">
-        <input type="text" autocomplete="off" placeholder="Make the world a better place" id="chat_input" required>
-        <button type="submit" style="display:none"></button>
-    </form>
+<div id="interface_user_main">
+    <div id="chat">
+        <form id="chat_forms">
+            <input type="text" autocomplete="off" placeholder="Make the world a better place" id="chat_input" required>
+            <button type="submit" style="display:none"></button>
+        </form>
 
-    <div id="chat_message"></div>
+        <div id="chat_message"></div>
+    </div>
+
+    <div id="server_status">
+        <div id="button_pull">
+            Pull
+        </div>
+
+        <ul>
+            <li>User(s) online</li>
+        </ul>
+    </div>
 </div>
-
 
 {% endblock %}

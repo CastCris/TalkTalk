@@ -1,3 +1,24 @@
+:root{
+    --user_online_width: 29vw;
+
+    --rooms_width: 40vw;
+
+    --interface_user_main_width: 50vw;
+    --interface_user_main_height: 100%;
+
+    --chat_width: 90%;
+    --chat_height: 50vh;
+
+    --chat_forms_height: 10%;
+    --chat_forms_width: 90%;
+
+    --chat_input_height: 20%;
+    --chat_input_width: 10%;
+
+    --chat_message_height: 50vh;
+    --chat_message_width: 50vw;
+}
+
 main{
     display:flex;
     justify-content: space-between;
@@ -5,7 +26,7 @@ main{
 
 #rooms{
     background-color: gray;
-    width: 35vw;
+    width: var(--rooms_width);
     height: 100vh;
 
     overflow-y: scroll;
@@ -21,16 +42,38 @@ main{
     color: white;
 }
 
+#interface_user_main{
+    width: var(--interface_user_main_width);
+    height: var(--interface_user_main_height);
+}
+
+
+#chat{
+    width: var(--interface_user_main_width);
+    height: var(--interface_user_main_height);
+}
+
 #chat_forms{
-    width: 50vw;
+    width: var(--chat_width);
+    height: var(--chat_forms_height);
 }
 
 #chat_input{
-    width: 45vw;
+    width: var(--chat_width);
+    height: var(--chat_forms_height);
 }
 
 #chat_message{
     overflow-y: scroll;
-    height: 100vh;
+
+    background-color: blue;
+
+    height: var(--chat_message_height);
+    width: var(--chat_width);
+
+    padding: 10px;
 }
 
+#server_status{
+    background-color: green;
+}
