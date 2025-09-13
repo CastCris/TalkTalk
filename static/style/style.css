@@ -5,6 +5,8 @@
     --forms_width: auto;
 
     --label_text_color: black;
+
+    --header_height: 100px;
 }
 
 *{
@@ -12,9 +14,24 @@
     color: white;
 }
 
+@media screen and (min-width: 601px){
+    p{
+        font-size: 17px;
+    }
+}
+
+@media screen and (max-width: 600px){
+    p{
+        font-size: 24px;
+    }
+}
+
 body{
-    overflow-y: hidden;
     background-color: black;
+}
+
+header{
+    height: var(--header_height);
 }
 
 main{
@@ -73,4 +90,5 @@ header{
     color: white;
 
     padding: 15px 10px 10px 10px;
+    height: 50px;
 }
