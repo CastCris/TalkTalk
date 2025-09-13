@@ -85,6 +85,7 @@ def message_insert(message_id:str, content:str, user_name:str, room_name:str)->N
 def message_fetch(date_offset:int, room_name:str)->set:
     messages = session.query(Message.content, Message.date, Message.user_name) \
             .filter(Message.date > date_offset, Message.room_name == room_name) \
+            .order_by(Message.date) \
             .all()
 
     messages_list = [message for message in messages]
