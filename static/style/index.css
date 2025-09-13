@@ -1,12 +1,43 @@
-main{
-    display:flex;
-    justify-content: space-between;
+:root{
+    --main_height: calc(100% - var(--header_height));
+
+    --rooms_width: 35vw;
+
+    --interface_user_main_width: 50vw;
+    --interface_user_main_height: 100%;
+
+    --chat_width: 100%;
+    --chat_height: 90%;
+
+    --chat_forms_height: 50px;
+    --chat_forms_width: 90%;
+
+    --chat_input_height: 30%;
+    --chat_input_width: 90%;
+
+    --chat_message_height: calc(35vh - var(--chat_forms_height) );
+    --chat_message_width: 100%;
 }
 
+body{
+    display: flex;
+    flex-direction: column;
+    
+    height: 100vh;
+}
+
+main{
+    display:flex;
+    justify-content: flex-start;
+
+    height: var(--main_height);
+}
+
+/* */
 #rooms{
     background-color: gray;
-    width: 35vw;
-    height: 100vh;
+    min-width: var(--rooms_width);
+    height: 100%;
 
     overflow-y: scroll;
 }
@@ -21,16 +52,51 @@ main{
     color: white;
 }
 
+/* */
+#interface_user_main{
+    flex-grow: 1;
+
+    min-width: var(--interface_user_main_width);
+    height: auto;
+}
+
+/* */
+#chat{
+    width: var(--chat_width);
+    height: var(--chat_height);
+
+    display: flex;
+    flex-direction: column;
+
+    align-content: right;
+}
+
 #chat_forms{
-    width: 50vw;
+    width: var(--chat_forms_width);
+    height: var(--chat_forms_height);
 }
 
 #chat_input{
-    width: 45vw;
+    width: var(--chat_input_width);
+    height: var(--chat_input_height);
 }
 
 #chat_message{
     overflow-y: scroll;
-    height: 100vh;
+
+    background-color: blue;
+
+    height: var(--chat_message_height);
+    flex-grow: 1;
+    /* 
+    width: var(--chat_message_width);
+    */
+
+    padding: 10px;
+    margin: 15px;
 }
 
+/* */
+#server_status{
+    background-color: green;
+}
