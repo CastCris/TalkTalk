@@ -97,6 +97,11 @@ main{
 }
 
 /* */
+#message_more > h3{
+    color: black;
+}
+
+/* */
 #server_status{
     background-color: green;
 }

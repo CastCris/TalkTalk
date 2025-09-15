@@ -82,7 +82,7 @@ def login_auth()->object:
     flask.session['user_name'] = user_name
 
     response = flask.make_response(flask.redirect('/'))
-    response.set_cookie('user_name', user_name, secure=True, httponly=True, )
+    response.set_cookie('user_name', user_name, secure=True, httponly=True)
 
     return response
 
@@ -119,7 +119,7 @@ def sign_auth()->object:
     flask.session["user_name"] = user_name
 
     response = flask.make_response(flask.redirect('/'))
-    response.set_cookie('user_name', user_name)
+    response.set_cookie('user_name', user_name, secure=True, httponly=True)
 
     return response
 
