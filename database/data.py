@@ -35,8 +35,8 @@ def user_get(user_name:str)->object:
 
     return user
 
-def user_insert(name:str, email:str, status:str, password: str)->None:
-    user_new = User(name=name, email=email, status=status, password=password, connections=0)
+def user_insert(name:str, email:str, status:str, password: str, room_home:str)->None:
+    user_new = User(name=name, email=email, status=status, password=password, connections=0, room_home=room_home)
 
     session.add(user_new)
     session.commit()
@@ -75,6 +75,13 @@ def user_connections_get(user_name:str)->int:
 
     return user.connections
 
+def user_room_home_get(user_name:str)->str:
+    user = user_get(user_name)
+    if not user:
+        return ''
+
+    return user.room_name
+
 
 def message_insert(message_id:str, content:str, user_name:str, room_name:str)->None:
     message_new = Message(id=message_id, date=time.time(), user_name=user_name, room_name=room_name, content=content)
@@ -82,14 +89,43 @@ def message_insert(message_id:str, content:str, user_name:str, room_name:str)->N
 
     session.commit()
 
-def message_fetch(date_offset:int, room_name:str)->set:
+def message_fetch_newest(date_offset:int, room_name:str, limit:int)->set:
     messages = session.query(Message.content, Message.date, Message.user_name) \
             .filter(Message.date > date_offset, Message.room_name == room_name) \
+            .order_by(sqlalchemy.desc(Message.date)) \
+            .limit(limit) \
             .all()
 
-    messages_list = [message for message in messages]
+    messages_list = [
+        {'message_content': str(message[0]),
+         'message_offset': float(message[1]),
+         'message_user_name': str(message[2])
+        }
+        for message in messages
+    ]
 
-    return messages
+    # print('message_list: ', messages_list)
+
+    return messages_list
+
+def message_fetch_oldest(date_offset:int, room_name:str, limit:int)->set:
+    messages = session.query(Message.content, Message.date, Message.user_name) \
+            .filter(Message.date < date_offset, Message.room_name == room_name) \
+            .order_by(sqlalchemy.desc(Message.date)) \
+            .limit(limit) \
+            .all()
+
+    messages_list = [
+        {'message_content': str(message[0]),
+         'message_offset': float(message[1]),
+         'message_user_name': str(message[2])
+        }
+        for message in messages
+    ]
+
+    # print('message_list: ', messages_list)
+
+    return messages_list
 
 def message_date_get(message_id:str)->float:
     message_offset = session.query(Message.date).filter(Message.id == message_id).first()[0]

@@ -10,6 +10,10 @@ from database import *
 from routers import *
 
 import time
+import datetime
+
+import zlib
+import json
 
 ###
 app = flask.Flask(__name__)
@@ -20,18 +24,13 @@ socketio = flask_socketio.SocketIO(app, cors_allowed_origins="*", async_mode="ev
 socket_data = {}
 
 
-ROOM_INITIAL = 'index'
-
 SYSTEM_MESSAGE_OFFSET = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
 SYSTEM_MESSAGE_OFFSET_COUNT  = 0
 
-SUPER_ADMIN = 'super_admin'
-
-MESSAGE_MAX = 500
-MESSAGE_SCROLLOFF = 25
+MESSAGE_SCROLLOFF = 250
 
 try:
-    user_insert(SUPER_ADMIN, 'thisemaildoesntexists@email', STATUS_DIE, '')
+    user_insert(SUPER_ADMIN, 'thisemaildoesntexists@email', STATUS_DIE, '', ROOM_INITAL)
     room_insert(ROOM_INITIAL, SUPER_ADMIN)
 except Exception as e:
     session.rollback()
@@ -59,7 +58,7 @@ def message_send_user(message_content:str, message_offset:str, user_name:str)->N
                 'message_content': message_content,
                 'message_offset': message_offset,
 
-                'user_name': user_name
+                'message_user_name': user_name
             }
     )
 
@@ -70,7 +69,7 @@ def message_send_room(message_content:str, message_offset:list, user_name:str, r
                 'message_content': message_content,
                 'message_offset': message_offset,
 
-                'user_name': user_name
+                'message_user_name': user_name
             },
             to = room_name
     )
@@ -90,61 +89,54 @@ def message_send_system(message_content:str, room_name:str)->None:
 
     message_send_room(message_content, message_date, SUPER_ADMIN, room_name)
 
-##
-def data_recovery(room_name:str, message_offset:str)->None:
-    rooms_needed = None
+def message_data_recovery(room_name:str, message_offset:float, message_recovery_method:object)->None:
     message_needed = None
-    
-    # rooms_needed = room_get()
-    # message_needed  = message_fetch(message_offset, room_name)
-    try:
-        rooms_needed = room_get()
-        message_needed  = message_fetch(message_offset, room_name)
-    except Exception as e:
-        message_needed = [("Error in message recovery", 0, SUPER_ADMIN)]
-        rooms_needed = ["Error in rooms recovery"]
-        session.rollback()
 
-        print('Data_recovery ERROR: \n', e)
-        return
+    try:
+        message_needed = message_recovery_method(message_offset, room_name, MESSAGE_SCROLLOFF)
+    except Exception and e:
+        message_needed = [{
+            "message_content": "An error occurs while recovery messages...",
+            "user_name": SUPER_ADMIN,
+            "message_offset": time.time()
+        }]
+        session.rollback();
+
+        print('Error in message recovery:', e)
+
+    message_needed_str = json.dumps(message_needed)
+    message_needed_zip = zlib.compress(message_needed_str.encode('utf-8'))
 
     print('message_needed: ', message_needed)
-    print('rooms_needed: ', rooms_needed)
-    for i in message_needed:
-        message_content = i[0]
-        message_offset = i[1]
-        message_user = i[2]
+    flask_socketio.emit('message_recovery',{
+        "messages": message_needed_zip,
+        "scroll_off": len(message_needed)
+    })
 
-        print(i)
+def room_data_recovery()->None:
+    romms_needed = None
 
-        message_send_user(message_content, message_offset, message_user)
+    try:
+        rooms_needed = room_get()
+    except Exception as e:
+        rooms_needed = ["Error"]
+        session.rollback();
+
+        print('Error room recovery: ', e)
 
     flask_socketio.emit('room_recovery', {'rooms': rooms_needed})
 
+##
+def data_recovery(room_name:str, message_offset:float, message_recovery_method:object)->None:
+    message_data_recovery(room_name, message_offset, message_recovery_method)
+    room_data_recovery()
 
+
+###
 def connect_room(auth:object)->None:
     socket_id = flask.request.sid
-    message_offset = auth.get('messageOffset') if auth else 0
+    message_offset = auth.get('messageNewOffset') if auth else 0
     server_room = auth.get('serverRoom') if auth else 'index'
-
-    if not socket_id in socket_data:
-        socket_data[socket_id] = {}
-
-    room_able = []
-    try:
-        room_able = room_get()
-    except sqlalchemy.exc.OperationalError as e:
-        flask_socektio.emit('user_invalid')
-        print('Connect Error: ', e)
-
-        return
-
-    if not server_room in room_able:
-        server_room = ROOM_INITIAL
-
-        flask_socketio.emit('room_change',{
-            "room": server_room
-        })
 
     ###
     user_ip = flask.request.remote_addr;
@@ -161,6 +153,26 @@ def connect_room(auth:object)->None:
 
     user_connections_add(user_name)
     user_status_update(user_name, STATUS_ONLINE)
+
+    ###
+    if not socket_id in socket_data:
+        socket_data[socket_id] = {}
+
+    room_able = []
+    try:
+        room_able = room_get()
+    except sqlalchemy.exc.OperationalError as e:
+        flask_socektio.emit('user_invalid')
+        print('Connect Error: ', e)
+
+        return
+
+    if not server_room in room_able:
+        server_room = user_room_home_get(user_name)
+
+        flask_socketio.emit('room_change',{
+            "room": server_room
+        })
 
     ###
     message_index = f"User connection: { user_name }, { user_ip }"
@@ -226,7 +238,7 @@ def room_join(data)->None:
     room_name = data["room"]
     user_name = flask.request.cookies["user_name"]
 
-    message_offset = data.get("message_offset", 0)
+    message_offset = 0
 
     socket_id = flask.request.sid
     if not room_name:
@@ -244,7 +256,7 @@ def room_join(data)->None:
     flask_socketio.emit('output_room_clean');
 
     #
-    data_recovery(room_name, message_offset)
+    data_recovery(room_name, message_offset, message_fetch_newest)
 
     flask_socketio.emit('room_joined', {
         "room": room_name
@@ -338,6 +350,13 @@ def handler_message(data)->None:
     #
 
     message_send_room(message_content, message_date, user_name, room_name)
+
+@socketio.on('message_load')
+def handler_message_load(auth)->None:
+    message_old_offset = auth.get('messageOldOffset', 0)
+    server_room = auth.get('serverRoom', 'index')
+
+    message_data_recovery(server_room, message_old_offset, message_fetch_oldest)
 
 
 if __name__=='__main__':

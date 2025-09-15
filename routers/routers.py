@@ -14,6 +14,9 @@ STATUS_DIE = 'die'
 STATUS_ONLINE = 'online'
 STATUS_OFFLINE = 'offline'
 
+SUPER_ADMIN = 'super_admin'
+ROOM_INITIAL = 'index'
+
 main_routers = flask.Blueprint('main', __name__)
 
 """
@@ -66,7 +69,7 @@ def login_auth()->object:
 
     # result = user_insert(user_name, user_email, user_password)
     try:
-        result = user_insert(user_name, user_email, STATUS_ONLINE, user_password)
+        result = user_insert(user_name, user_email, STATUS_ONLINE, user_password, ROOM_INITIAL)
     except sqlalchemy.exc.IntegrityError:
         flask.session["message"]="Unavailable user name"
         session.rollback()
@@ -82,7 +85,7 @@ def login_auth()->object:
     flask.session['user_name'] = user_name
 
     response = flask.make_response(flask.redirect('/'))
-    response.set_cookie('user_name', user_name, secure=True, httponly=True, )
+    response.set_cookie('user_name', user_name, secure=True, httponly=True)
 
     return response
 
@@ -119,7 +122,7 @@ def sign_auth()->object:
     flask.session["user_name"] = user_name
 
     response = flask.make_response(flask.redirect('/'))
-    response.set_cookie('user_name', user_name)
+    response.set_cookie('user_name', user_name, secure=True, httponly=True)
 
     return response
 

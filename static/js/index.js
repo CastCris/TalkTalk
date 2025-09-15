@@ -6,12 +6,54 @@ const BOX_MESSAGE_CONTENT_ID = 'message_content';
 const BOX_MESSAGE_TIME_ID = 'message_time';
 const BOX_MESSAGE_USER_ID = 'message_user';
 
-const BOX_ROOM_BUTTON_ID = 'room_name_';
+const BOX_BUTTON_MESSAGE_MORE = 'message_more';
+
+const BOX_BUTTON_ROOM_ID = 'room_name_';
+
+const BOX_ROOM_SELECTED = 'room_selected';
+const BOX_ROOM_UNSELECTED = 'room_unselected';
+
+
+function sleep(ms){
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
+const ROOM_DOM = (room_name, room_class) => {
+    return `
+        <li>
+            <button onclick='room_change_button(this)'
+            id='${BOX_BUTTON_ROOM_ID}${room_name}'>
+            <p class='${room_class}'>${room_name}</p>
+            </button>
+        </li>`;
+}
+
+const MESSAGE_DOM = (message_content, message_data, user_name) => {
+    const clock = time_now(message_data*1000)
+
+    return `
+        <div id="${BOX_MESSAGE_ID}">
+            <p id="${BOX_MESSAGE_CONTENT_ID}">${message_content}</p>
+            <span id="${BOX_MESSAGE_TIME_ID}">${clock["hours"]}:${clock["minutes"]}:${clock["seconds"]}</span>
+            <span>--</span>
+            <span id="${BOX_MESSAGE_USER_ID}">${user_name}</span>
+        </div>
+        <br>
+    `
+}
+
+const MESSAGE_MORE_DOM = `
+    <button id="${BOX_BUTTON_MESSAGE_MORE}" onclick='message_load()'>
+        <h3>More</h3>
+    </div>
+`
 
 //
 const socket = io({
     auth:{
-        messageOffset: 0,
+        messageNewOffset: 0,
+        messageOldOffset: 0,
         serverRoom: [ sessionStorage.getItem('serverRoom') || 'index'][0],
 
         typeConnection: "room"
@@ -27,8 +69,6 @@ const INPUT_BOX = document.getElementById("chat_input");
 const FORMS = document.getElementById("chat_forms");
 
 const ROOMS_ABLE = document.getElementById("rooms_able");
-
-let clock_last = null;
 
 //
 function time_now(timestamp){
@@ -56,22 +96,42 @@ function time_now(timestamp){
     return date_now;
 }
 
-function label_time_add(time_curr, time_prev){
-    if(!time_prev)
-        return;
-    if(time_curr["day"] == time_prev["day"] && time_curr["month"] == time_prev["month"] && time_curr["year"] == time_prev["year"])
-        return;
-    // console.log(time_prev);
+function time_recent(time1, time2){
+    const data1 = new Date(`${time1['year']}-${time1['month']}-${time1['day']}`);
+    const data2 = new Date(`${time2['year']}-${time2['month']}-${time2['day']}`);
 
-    OUTPUT_BOX.innerHTML = ` 
-    <div id="${BOX_DATA_UPDATE_ID}">
-        <h2 id="${BOX_DATA_ID}">${time_prev["day"]}/${time_prev["month"]}/${time_prev["year"]}</h2>
-    </div>
-    ` + OUTPUT_BOX.innerHTML;
+    if(isNaN(data2.getTime()))
+        return 1;
+
+    // console.log(data1.getTime(), data2.getTime());
+
+    if(data1.getTime() > data2.getTime())
+        return 1;
+    return 0;
 }
 
-function room_change(room_name_old, room_name_new){
+
+function time_label_gen(time_past, time_future){
+    if(!time_future)
+        return null;
+    if(time_future["day"] == time_past["day"] && time_future["month"] == time_past["month"] && time_future["year"] == time_past["year"])
+        return null;
+    // console.log(time_past);
+    // console.log(time_future);
+
+    return ` 
+    <div id="${BOX_DATA_UPDATE_ID}">
+        <h2 id="${BOX_DATA_ID}">${time_past["day"]}/${time_past["month"]}/${time_past["year"]}</h2>
+    </div>
+    ` 
+}
+
+//
+function room_switch(room_name_old, room_name_new){
     socket.auth.serverRoom = room_name_new;
+    socket.auth.messageOldOffset = 0;
+
+    sessionStorage.setItem('clockLast', 'null');
 
     socket.emit('room_change',{
         "room_name_old": room_name_old,
@@ -81,37 +141,133 @@ function room_change(room_name_old, room_name_new){
     sessionStorage.setItem('serverRoom', room_name_new);
 }
 
+function room_change_type(room_name, room_type_new){
+    const room_button = document.getElementById(BOX_BUTTON_ROOM_ID+room_name);
+    const room_button_type = room_button.children[0];
+
+    room_button_type.className = room_type_new;
+}
+
+//
+function message_show_background(data){
+    const message = data["message_content"];
+    const message_offset = data["message_offset"];
+
+    const user_name = data["message_user_name"];
+
+    //
+    // console.log(data);
+    const clock = time_now(message_offset*1000);
+
+    const message_new = MESSAGE_DOM(message, message_offset, user_name);
+    // sessionStorage.setItem('messageOffset', socket.auth.serverOffset);
+
+    return message_new;
+}
+
+function message_show_begin(data, clock_last, message_html){
+    const message_offset = data["message_offset"];
+
+    const clock = time_now(message_offset*1000);
+    const clock_label = time_label_gen(clock, clock_last.clock);
+
+    const message_new = message_show_background(data);
+
+    if(clock_label){
+        message_html.innerHTML = clock_label + message_html.innerHTML;
+    }
+    message_html.innerHTML = message_new + message_html.innerHTML;
+
+    clock_last.clock = clock;
+}
+
+function message_show_end(data, clock_last, message_html){
+    const message_offset = data["message_offset"];
+
+    const clock = time_now(message_offset*1000);
+    const clock_label = time_label_gen(clock, clock_last.clock);
+
+    const message_new = message_show_background(data);
+
+    if(clock_label){
+        message_html.innerHTML += clock_label
+    }
+
+    message_html.innerHTML += message_new;
+
+    clock_last.clock = clock;
+}
+
+
+function message_load(){
+    const message_more = document.getElementById(BOX_BUTTON_MESSAGE_MORE);
+    message_more.remove();
+
+    socket.emit('message_load', socket.auth);
+}
 
 //
 socket.on('connect', () => {
-    clock_last = null;
+    // sessionStorage.setItem('clockLast', 'null');
 });
 
+// 
 socket.on('message', (data) => {
-    const message = data["message_content"];
-    const serverDataOffset = data["message_offset"];
+    // console.log(data);
+    let clock_last = { clock: JSON.parse(sessionStorage.getItem('clockLast')) };
+    const message_html = { innerHTML: '' };
 
-    const user_name = data["user_name"];
+    message_show_begin(data, clock_last, message_html);
 
-    console.log(data);
+    OUTPUT_BOX.innerHTML = message_html.innerHTML + OUTPUT_BOX.innerHTML;
 
-    const clock = time_now(serverDataOffset*1000)
-    label_time_add(clock, clock_last);
+    socket.auth.messageNewOffset = data["message_offset"];
+    sessionStorage.setItem('clockLast', JSON.stringify(clock_last.clock));
+});
 
-    OUTPUT_BOX.innerHTML = `
-        <div id="${BOX_MESSAGE_ID}">
-            <p id="${BOX_MESSAGE_CONTENT_ID}">${message}</p>
-            <span id="${BOX_MESSAGE_TIME_ID}">${clock["hours"]}:${clock["minutes"]}:${clock["seconds"]}</span>
-            <span>--</span>
-            <span id="${BOX_MESSAGE_USER_ID}">${user_name}</span>
-        </div>
-        <br>
-    ` + OUTPUT_BOX.innerHTML;
+socket.on('message_recovery', (data) => {
+    const message_scrolloff = data["scroll_off"];
+    const message_compress = data["messages"];
+    const message_decompress = pako.inflate(message_compress, { to: 'string' });
 
-    socket.auth.serverOffset = serverDataOffset;
-    clock_last = clock;
+    const messages = JSON.parse(message_decompress);
 
-    sessionStorage.setItem('messageOffset', socket.auth.serverOffset);
+    if(!message_scrolloff)
+        return;
+
+    //
+    const message_more = document.getElementById(BOX_BUTTON_MESSAGE_MORE);
+    if(message_more)
+        message_more.remove();
+
+    //
+    // console.log(data);
+    console.log(messages);
+
+    let clock_last = { clock: null };
+    const message_html = { innerHTML: '' };
+    for(var i=0; i<messages.length; ++i){
+        const message = messages[i];
+
+        message_show_end(message, clock_last, message_html);
+    }
+
+    OUTPUT_BOX.innerHTML += message_html.innerHTML;
+    OUTPUT_BOX.innerHTML += MESSAGE_MORE_DOM;
+
+    //
+    socket.auth.messageOldOffset = messages[message_scrolloff-1]["message_offset"];
+
+    clock = time_now(messages[0]["message_offset"]*1000);
+    const clock_storage = sessionStorage.getItem('clockLast');
+
+    if(!clock_storage || clock_storage == 'null')
+        sessionStorage.setItem('clockLast', JSON.stringify(clock));
+    else if(time_recent(clock, JSON.parse(clock_storage))){
+        sessionStorage.setItem('clockLast', JSON.stringify(clock));
+        // console.log('clock: ', sessionStorage);
+    }
+
 });
 
 socket.on('output_clean', () => {
@@ -125,33 +281,25 @@ socket.on('output_room_clean', () => {
 socket.on('room_recovery', (data) => {
     ROOMS_ABLE.innerHTML = '';
 
-    rooms = data["rooms"];
+    const rooms = data["rooms"];
     for(var i=0;i<rooms.length;++i){
-        ROOMS_ABLE.innerHTML += `
-            <li>
-                <button onclick='room_change_button(this)'
-                id='${BOX_ROOM_BUTTON_ID}${rooms[i]}'
-                class="room_unselected"
-                > ${rooms[i]} </button>
-            </li>`;
+        const room_name = rooms[i];
+
+        const room_new = ROOM_DOM(room_name, BOX_ROOM_UNSELECTED);
+        ROOMS_ABLE.innerHTML += room_new;
+
         console.log(rooms[i]);
     }
 });
 
 socket.on('room_joined', (data) => {
     const room_name = data["room"];
-
-    room_button = document.getElementById(BOX_ROOM_BUTTON_ID+room_name);
-    room_button.className = "room_selected";
-    console.log(room_name, room_button.className);
+    room_change_type(room_name, BOX_ROOM_SELECTED);
 });
 
 socket.on('room_leaved', (data) => {
     const room_name = data["room"];
-
-    room_button = document.getElementById(BOX_ROOM_BUTTON_ID+room_name);
-    console.log(room_button);
-    room_button.className = "room_unselected";
+    room_change_type(room_name, BOX_ROOM_UNSELECTED);
 });
 
 socket.on('room_create', (data) => {
@@ -161,18 +309,13 @@ socket.on('room_create', (data) => {
     for(var i=0;i<rooms.length;++i){
         const room_name = rooms[i];
 
-        let room_button_class = 'room_unselected';
+        let room_class = BOX_ROOM_UNSELECTED;
         if(room_name == socket.auth.serverRoom)
-            room_button_class = 'room_selected';
+            room_class = BOX_ROOM_SELECTED;
 
+        const room_new = ROOM_DOM(room_name, room_class)
         
-        ROOMS_ABLE.innerHTML += `
-            <li>
-                <button onclick='room_change_button(this)'
-                id='room_name_${rooms[i]}'
-                class="${room_button_class}"
-                > ${room_name} </button>
-            </li>`;
+        ROOMS_ABLE.innerHTML += room_new;
     }
 });
 
@@ -199,9 +342,15 @@ FORMS.addEventListener('submit', (e) => {
     ++socket_id_counter;
 });
 
+OUTPUT_BOX.addEventListener('scroll', () => {
+    if(OUTPUT_BOX.scrollHeight - OUTPUT_BOX.scrollTop == OUTPUT_BOX.clientHeight){
+        socket.emit('message_load', socket.auth);
+    }
+});
+
 function room_change_button(button){
-    const room_name_new = button.id.split(BOX_ROOM_BUTTON_ID)[1]
+    const room_name_new = button.id.split(BOX_BUTTON_ROOM_ID)[1]
     const room_name_old = socket.auth.serverRoom;
     
-    room_change(room_name_old, room_name_new);
+    room_switch(room_name_old, room_name_new);
 }
