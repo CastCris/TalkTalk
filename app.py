@@ -24,17 +24,13 @@ socketio = flask_socketio.SocketIO(app, cors_allowed_origins="*", async_mode="ev
 socket_data = {}
 
 
-ROOM_INITIAL = 'index'
-
 SYSTEM_MESSAGE_OFFSET = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
 SYSTEM_MESSAGE_OFFSET_COUNT  = 0
-
-SUPER_ADMIN = 'super_admin'
 
 MESSAGE_SCROLLOFF = 250
 
 try:
-    user_insert(SUPER_ADMIN, 'thisemaildoesntexists@email', STATUS_DIE, '')
+    user_insert(SUPER_ADMIN, 'thisemaildoesntexists@email', STATUS_DIE, '', ROOM_INITAL)
     room_insert(ROOM_INITIAL, SUPER_ADMIN)
 except Exception as e:
     session.rollback()
@@ -142,25 +138,6 @@ def connect_room(auth:object)->None:
     message_offset = auth.get('messageNewOffset') if auth else 0
     server_room = auth.get('serverRoom') if auth else 'index'
 
-    if not socket_id in socket_data:
-        socket_data[socket_id] = {}
-
-    room_able = []
-    try:
-        room_able = room_get()
-    except sqlalchemy.exc.OperationalError as e:
-        flask_socektio.emit('user_invalid')
-        print('Connect Error: ', e)
-
-        return
-
-    if not server_room in room_able:
-        server_room = ROOM_INITIAL
-
-        flask_socketio.emit('room_change',{
-            "room": server_room
-        })
-
     ###
     user_ip = flask.request.remote_addr;
     user_name = flask.request.cookies.get("user_name", None);
@@ -176,6 +153,26 @@ def connect_room(auth:object)->None:
 
     user_connections_add(user_name)
     user_status_update(user_name, STATUS_ONLINE)
+
+    ###
+    if not socket_id in socket_data:
+        socket_data[socket_id] = {}
+
+    room_able = []
+    try:
+        room_able = room_get()
+    except sqlalchemy.exc.OperationalError as e:
+        flask_socektio.emit('user_invalid')
+        print('Connect Error: ', e)
+
+        return
+
+    if not server_room in room_able:
+        server_room = user_room_home_get(user_name)
+
+        flask_socketio.emit('room_change',{
+            "room": server_room
+        })
 
     ###
     message_index = f"User connection: { user_name }, { user_ip }"

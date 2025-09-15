@@ -35,8 +35,8 @@ def user_get(user_name:str)->object:
 
     return user
 
-def user_insert(name:str, email:str, status:str, password: str)->None:
-    user_new = User(name=name, email=email, status=status, password=password, connections=0)
+def user_insert(name:str, email:str, status:str, password: str, room_home:str)->None:
+    user_new = User(name=name, email=email, status=status, password=password, connections=0, room_home=room_home)
 
     session.add(user_new)
     session.commit()
@@ -74,6 +74,13 @@ def user_connections_get(user_name:str)->int:
         return 0
 
     return user.connections
+
+def user_room_home_get(user_name:str)->str:
+    user = user_get(user_name)
+    if not user:
+        return ''
+
+    return user.room_name
 
 
 def message_insert(message_id:str, content:str, user_name:str, room_name:str)->None:
