@@ -30,7 +30,7 @@ SYSTEM_MESSAGE_OFFSET_COUNT  = 0
 MESSAGE_SCROLLOFF = 250
 
 try:
-    user_insert(SUPER_ADMIN, 'thisemaildoesntexists@email', STATUS_DIE, '', ROOM_INITAL)
+    user_insert(SUPER_ADMIN, 'thisemaildoesntexists@email', STATUS_DIE, '', ROOM_INITIAL)
     room_insert(ROOM_INITIAL, SUPER_ADMIN)
 except Exception as e:
     session.rollback()
@@ -169,6 +169,7 @@ def connect_room(auth:object)->None:
 
     if not server_room in room_able:
         server_room = user_room_home_get(user_name)
+        server_room = server_room if server_room in room_able else ROOM_INITIAL
 
         flask_socketio.emit('room_change',{
             "room": server_room

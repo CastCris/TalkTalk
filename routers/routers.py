@@ -70,12 +70,14 @@ def login_auth()->object:
     # result = user_insert(user_name, user_email, user_password)
     try:
         result = user_insert(user_name, user_email, STATUS_ONLINE, user_password, ROOM_INITIAL)
-    except sqlalchemy.exc.IntegrityError:
+    except sqlalchemy.exc.IntegrityError as e:
+        print('ERROR login_auth', e)
         flask.session["message"]="Unavailable user name"
         session.rollback()
 
         return flask.redirect(flask.url_for('main.login_display'))
-    except:
+    except Exception as e:
+        print('ERROR Login_auth: ', e)
         flask.session["message"]="An error occurs..."
         session.rollback()
 

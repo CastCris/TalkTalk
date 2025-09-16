@@ -1,22 +1,34 @@
 :root{
     --main_height: calc(100% - var(--header_height));
 
+    /* */
     --rooms_width: 35vw;
 
+    /* */
     --interface_user_main_width: 50vw;
     --interface_user_main_height: 100%;
 
+    /* */
     --chat_width: 100%;
-    --chat_height: 90%;
+    --chat_height: 80%;
 
+    --chat_height_reduce: 50%;
+
+    /* */
     --chat_forms_height: 50px;
     --chat_forms_width: 90%;
 
+    /* */
     --chat_input_height: 30%;
     --chat_input_width: 90%;
 
+    /* */
     --chat_message_height: calc(35vh - var(--chat_forms_height) );
     --chat_message_width: 100%;
+
+    /* */
+    --server_status_height_neutral: 20%;
+    --server_status_height_expand: 50%;
 }
 
 body{
@@ -63,13 +75,21 @@ main{
 /* */
 #chat{
     width: var(--chat_width);
-    height: var(--chat_height);
 
     display: flex;
     flex-direction: column;
 
     align-content: right;
 }
+
+.chat_neutral{
+    height: var(--chat_height);
+}
+
+.chat_reduce{
+    height: var(--chat_height_reduce);
+}
+
 
 #chat_forms{
     width: var(--chat_forms_width);
@@ -104,4 +124,12 @@ main{
 /* */
 #server_status{
     background-color: green;
+}
+
+.server_status_neutral{
+    height: var(--server_status_height_neutral);
+}
+
+.server_status_expand{
+    height: var(--server_status_height_expand);
 }

@@ -4,7 +4,9 @@
 
 <link rel="stylesheet" href="{{ url_for("static", filename="style/index.css") }}">
 
-<script src="{{ url_for("static", filename="js/index.js") }}" defer></script>
+<script src="{{ url_for("static", filename="js/globals.js") }}" defer></script>
+<script src="{{ url_for("static", filename="js/index_socket.js") }}" defer></script>
+<script src="{{ url_for("static", filename="js/index_server_status.js") }}" defer></script>
 
 <!-- -->
 <div id="rooms">
@@ -13,7 +15,7 @@
 </div>
 
 <div id="interface_user_main">
-    <div id="chat">
+    <div id="chat" class="chat_neutral">
         <form id="chat_forms">
             <input type="text" autocomplete="off" placeholder="Make the world a better place" id="chat_input" required>
             <button type="submit" style="display:none"></button>
@@ -22,7 +24,7 @@
         <div id="chat_message"></div>
     </div>
 
-    <div id="server_status">
+    <div id="server_status" class="server_status_neutral">
         <div id="button_pull">
             Pull
         </div>

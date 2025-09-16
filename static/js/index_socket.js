@@ -1,55 +1,3 @@
-const BOX_DATA_UPDATE_ID = 'data_update';
-const BOX_DATA_ID = 'data';
-
-const BOX_MESSAGE_ID = 'message';
-const BOX_MESSAGE_CONTENT_ID = 'message_content';
-const BOX_MESSAGE_TIME_ID = 'message_time';
-const BOX_MESSAGE_USER_ID = 'message_user';
-
-const BOX_BUTTON_MESSAGE_MORE = 'message_more';
-
-const BOX_BUTTON_ROOM_ID = 'room_name_';
-
-const BOX_ROOM_SELECTED = 'room_selected';
-const BOX_ROOM_UNSELECTED = 'room_unselected';
-
-
-function sleep(ms){
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-
-const ROOM_DOM = (room_name, room_class) => {
-    return `
-        <li>
-            <button onclick='room_change_button(this)'
-            id='${BOX_BUTTON_ROOM_ID}${room_name}'>
-            <p class='${room_class}'>${room_name}</p>
-            </button>
-        </li>`;
-}
-
-const MESSAGE_DOM = (message_content, message_data, user_name) => {
-    const clock = time_now(message_data*1000)
-
-    return `
-        <div id="${BOX_MESSAGE_ID}">
-            <p id="${BOX_MESSAGE_CONTENT_ID}">${message_content}</p>
-            <span id="${BOX_MESSAGE_TIME_ID}">${clock["hours"]}:${clock["minutes"]}:${clock["seconds"]}</span>
-            <span>--</span>
-            <span id="${BOX_MESSAGE_USER_ID}">${user_name}</span>
-        </div>
-        <br>
-    `
-}
-
-const MESSAGE_MORE_DOM = `
-    <button id="${BOX_BUTTON_MESSAGE_MORE}" onclick='message_load()'>
-        <h3>More</h3>
-    </div>
-`
-
-//
 const socket = io({
     auth:{
         messageNewOffset: 0,
@@ -63,12 +11,6 @@ const socket = io({
 const socket_id = crypto.getRandomValues(new Uint32Array(1))[0];
 let socket_id_counter = 0;
 
-//
-const OUTPUT_BOX = document.getElementById("chat_message");
-const INPUT_BOX = document.getElementById("chat_input");
-const FORMS = document.getElementById("chat_forms");
-
-const ROOMS_ABLE = document.getElementById("rooms_able");
 
 //
 function time_now(timestamp){
@@ -120,8 +62,8 @@ function time_label_gen(time_past, time_future){
     // console.log(time_future);
 
     return ` 
-    <div id="${BOX_DATA_UPDATE_ID}">
-        <h2 id="${BOX_DATA_ID}">${time_past["day"]}/${time_past["month"]}/${time_past["year"]}</h2>
+    <div id="${DOM_DATA_UPDATE_ID}">
+        <h2 id="${DOM_DATA_ID}">${time_past["day"]}/${time_past["month"]}/${time_past["year"]}</h2>
     </div>
     ` 
 }
@@ -142,7 +84,7 @@ function room_switch(room_name_old, room_name_new){
 }
 
 function room_change_type(room_name, room_type_new){
-    const room_button = document.getElementById(BOX_BUTTON_ROOM_ID+room_name);
+    const room_button = document.getElementById(DOM_BUTTON_ROOM_ID+room_name);
     const room_button_type = room_button.children[0];
 
     room_button_type.className = room_type_new;
@@ -159,7 +101,7 @@ function message_show_background(data){
     // console.log(data);
     const clock = time_now(message_offset*1000);
 
-    const message_new = MESSAGE_DOM(message, message_offset, user_name);
+    const message_new = DOM_MESSAGE(message, message_offset, user_name);
     // sessionStorage.setItem('messageOffset', socket.auth.serverOffset);
 
     return message_new;
@@ -200,7 +142,7 @@ function message_show_end(data, clock_last, message_html){
 
 
 function message_load(){
-    const message_more = document.getElementById(BOX_BUTTON_MESSAGE_MORE);
+    const message_more = document.getElementById(DOM_BUTTON_MESSAGE_MORE);
     message_more.remove();
 
     socket.emit('message_load', socket.auth);
@@ -219,7 +161,7 @@ socket.on('message', (data) => {
 
     message_show_begin(data, clock_last, message_html);
 
-    OUTPUT_BOX.innerHTML = message_html.innerHTML + OUTPUT_BOX.innerHTML;
+    CHAT_MESSAGE.innerHTML = message_html.innerHTML + CHAT_MESSAGE.innerHTML;
 
     socket.auth.messageNewOffset = data["message_offset"];
     sessionStorage.setItem('clockLast', JSON.stringify(clock_last.clock));
@@ -236,7 +178,7 @@ socket.on('message_recovery', (data) => {
         return;
 
     //
-    const message_more = document.getElementById(BOX_BUTTON_MESSAGE_MORE);
+    const message_more = document.getElementById(DOM_BUTTON_MESSAGE_MORE);
     if(message_more)
         message_more.remove();
 
@@ -252,8 +194,8 @@ socket.on('message_recovery', (data) => {
         message_show_end(message, clock_last, message_html);
     }
 
-    OUTPUT_BOX.innerHTML += message_html.innerHTML;
-    OUTPUT_BOX.innerHTML += MESSAGE_MORE_DOM;
+    CHAT_MESSAGE.innerHTML += message_html.innerHTML;
+    CHAT_MESSAGE.innerHTML += DOM_MESSAGE_MORE ;
 
     //
     socket.auth.messageOldOffset = messages[message_scrolloff-1]["message_offset"];
@@ -271,22 +213,22 @@ socket.on('message_recovery', (data) => {
 });
 
 socket.on('output_clean', () => {
-    OUTPUT_BOX.innerHTML = '';
+    CHAT_MESSAGE.innerHTML = '';
 });
 
 socket.on('output_room_clean', () => {
-    ROOMS_ABLE.innerHTML = '';
+    ROOM_ABLE.innerHTML = '';
 });
 
 socket.on('room_recovery', (data) => {
-    ROOMS_ABLE.innerHTML = '';
+    ROOM_ABLE.innerHTML = '';
 
     const rooms = data["rooms"];
     for(var i=0;i<rooms.length;++i){
         const room_name = rooms[i];
 
-        const room_new = ROOM_DOM(room_name, BOX_ROOM_UNSELECTED);
-        ROOMS_ABLE.innerHTML += room_new;
+        const room_new = DOM_ROOM(room_name, DOM_ROOM_UNSELECTED);
+        ROOM_ABLE.innerHTML += room_new;
 
         console.log(rooms[i]);
     }
@@ -294,62 +236,62 @@ socket.on('room_recovery', (data) => {
 
 socket.on('room_joined', (data) => {
     const room_name = data["room"];
-    room_change_type(room_name, BOX_ROOM_SELECTED);
+    room_change_type(room_name, DOM_ROOM_SELECTED);
 });
 
 socket.on('room_leaved', (data) => {
     const room_name = data["room"];
-    room_change_type(room_name, BOX_ROOM_UNSELECTED);
+    room_change_type(room_name, DOM_ROOM_UNSELECTED);
 });
 
 socket.on('room_create', (data) => {
-    ROOMS_ABLE.innerHTML = '';
+    ROOM_ABLE.innerHTML = '';
 
     const rooms = data["room_able"]
     for(var i=0;i<rooms.length;++i){
         const room_name = rooms[i];
 
-        let room_class = BOX_ROOM_UNSELECTED;
+        let room_class = DOM_ROOM_UNSELECTED;
         if(room_name == socket.auth.serverRoom)
-            room_class = BOX_ROOM_SELECTED;
+            room_class = DOM_ROOM_SELECTED;
 
-        const room_new = ROOM_DOM(room_name, room_class)
+        const room_new = DOM_ROOM(room_name, room_class)
         
-        ROOMS_ABLE.innerHTML += room_new;
+        ROOM_ABLE.innerHTML += room_new;
     }
 });
 
 
 socket.on('user_invalid', () => {
     console.log('AAAAAA');
-    OUTPUT_BOX.innerHTML = '<p>Hey! Looks that you are using a invalid user name, for some reason. Please, sign with other account or create a new</p>';
+    CHAT_MESSAGE.innerHTML = '<p>Hey! Looks that you are using a invalid user name, for some reason. Please, sign with other account or create a new</p>';
 })
 
 
 //
-FORMS.addEventListener('submit', (e) => {
+CHAT_FORMS.addEventListener('submit', (e) => {
     e.preventDefault();
 
-    if(!INPUT_BOX.value)
+    if(!CHAT_INPUT.value.length)
         return;
     socket.emit('message', {
-        "message_content": INPUT_BOX.value,
+        "message_content": CHAT_INPUT.value,
         "message_id": socket_id+'-'+socket_id_counter,
         "room": socket.auth.serverRoom
     });
 
-    INPUT_BOX.value='';
+    CHAT_INPUT.value='';
     ++socket_id_counter;
 });
 
-OUTPUT_BOX.addEventListener('scroll', () => {
-    if(OUTPUT_BOX.scrollHeight - OUTPUT_BOX.scrollTop == OUTPUT_BOX.clientHeight){
+CHAT_MESSAGE.addEventListener('scroll', () => {
+    if(CHAT_MESSAGE.scrollHeight - CHAT_MESSAGE.scrollTop == CHAT_MESSAGE.clientHeight){
         socket.emit('message_load', socket.auth);
     }
 });
 
 function room_change_button(button){
-    const room_name_new = button.id.split(BOX_BUTTON_ROOM_ID)[1]
+    const room_name_new = button.id.split(DOM_BUTTON_ROOM_ID)[1]
     const room_name_old = socket.auth.serverRoom;
     
     room_switch(room_name_old, room_name_new);

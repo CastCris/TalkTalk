@@ -14,6 +14,6 @@ class User(Base):
     password = Column(String(USER_PASSWORD_LEN))
     status = Column(String(USER_STATUS_LEN))
 
-    room_home = Column(String(100), ForeignKey('Room.name'))
+    room_home = Column(String(100))
 
     connections = Column(Integer)
