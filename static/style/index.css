@@ -10,7 +10,7 @@
 
     /* */
     --chat_width: 100%;
-    --chat_height: 80%;
+    --chat_height: 90%;
 
     --chat_height_reduce: 50%;
 
@@ -27,7 +27,7 @@
     --chat_message_width: 100%;
 
     /* */
-    --server_status_height_neutral: 20%;
+    --server_status_height_neutral: 10%;
     --server_status_height_expand: 50%;
 }
 
@@ -132,4 +132,15 @@ main{
 
 .server_status_expand{
     height: var(--server_status_height_expand);
+}
+
+
+#server_status_pull{
+    display: flex;
+    justify-content: center;
+}
+
+
+#server_status_content{
+    padding: 10px;
 }

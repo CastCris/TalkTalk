@@ -4,9 +4,8 @@
 
 <link rel="stylesheet" href="{{ url_for("static", filename="style/index.css") }}">
 
-<script src="{{ url_for("static", filename="js/globals.js") }}" defer></script>
-<script src="{{ url_for("static", filename="js/index_socket.js") }}" defer></script>
-<script src="{{ url_for("static", filename="js/index_server_status.js") }}" defer></script>
+<script src="{{ url_for("static", filename="js/index_socket.js") }}" type="module" defer></script>
+<script src="{{ url_for("static", filename="js/index_server_status.js") }}" type="module" defer></script>
 
 <!-- -->
 <div id="rooms">
@@ -25,13 +24,14 @@
     </div>
 
     <div id="server_status" class="server_status_neutral">
-        <div id="button_pull">
+        <div id="server_status_pull">
             Pull
         </div>
 
-        <ul>
-            <li>User(s) online</li>
-        </ul>
+        <div id="server_status_content">
+            <div id="server_status_highlights"></div>
+            <div id="server_status_result"></div>
+        </div>
     </div>
 </div>
 

@@ -1,12 +1,14 @@
-SERVER_STATUS.addEventListener('click', (e) => {
+import * as index from './index_globals.js';
+
+index.SERVER_STATUS.addEventListener('click', (e) => {
     e.preventDefault();
 
     //
-    if(SERVER_STATUS.className == 'server_status_expand'){
-        SERVER_STATUS.className = 'server_status_neutral';
-        CHAT.className = 'chat_neutral';
+    if(index.SERVER_STATUS.className == 'server_status_expand'){
+        index.SERVER_STATUS.className = 'server_status_neutral';
+        index.CHAT.className = 'chat_neutral';
     } else{
-        SERVER_STATUS.className = 'server_status_expand';
-        CHAT.className = 'chat_reduce';
+        index.SERVER_STATUS.className = 'server_status_expand';
+        index.CHAT.className = 'chat_reduce';
     }
 });
