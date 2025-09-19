@@ -138,6 +138,9 @@ main{
 #server_status_pull{
     display: flex;
     justify-content: center;
+
+    background-color: yellow;
+    color: black;
 }
 
 

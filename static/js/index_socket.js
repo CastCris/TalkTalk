@@ -189,6 +189,7 @@ socket.on('message_recovery', (data) => {
 
 });
 
+
 socket.on('output_clean', () => {
     index.CHAT_MESSAGE.innerHTML = '';
 });
@@ -196,6 +197,7 @@ socket.on('output_clean', () => {
 socket.on('output_room_clean', () => {
     index.ROOM_ABLE.innerHTML = '';
 });
+
 
 socket.on('room_recovery', (data) => {
     index.ROOM_ABLE.innerHTML = '';
@@ -245,6 +247,22 @@ socket.on('user_invalid', () => {
 })
 
 
+socket.on('server_status_highlight', (data) => {
+    const highlight = data["highlight"];
+    let html_content = '';
+
+    for(var i=0; i<highlight.length; ++i){
+        const highlight_name = highlight[i];
+        html_content += index.DOM_SERVER_STATUS_HIGHTLIGHT(highlight_name);
+    }
+
+    index.SERVER_STATUS_HIGHLIGHT.innerHTML += html_content;
+});
+
+socket.on('server_status_data', (data) => {
+    console.log(data);
+});
+
 //
 index.CHAT_FORMS.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -275,4 +293,13 @@ function room_change_button(button){
     room_switch(room_name_old, room_name_new);
 }
 
+function server_status_data_get(button){
+    const highlight_name = button.id.split(index.DOM_SERVER_STATUS_ID+'_')[1];
+
+    socket.emit('server_status_data_get', {
+        "highlight_name": highlight_name
+    });
+}
+
 window.room_change_button = room_change_button;
+window.server_status_data_get = server_status_data_get;

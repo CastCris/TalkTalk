@@ -1,6 +1,6 @@
 import * as index from './index_globals.js';
 
-index.SERVER_STATUS.addEventListener('click', (e) => {
+index.SERVER_STATUS_PULL.addEventListener('click', (e) => {
     e.preventDefault();
 
     //

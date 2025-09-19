@@ -23,12 +23,15 @@ app.register_blueprint(main_routers)
 socketio = flask_socketio.SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 socket_data = {}
 
-
 SYSTEM_MESSAGE_OFFSET = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(20))
 SYSTEM_MESSAGE_OFFSET_COUNT  = 0
 
 MESSAGE_SCROLLOFF = 250
 
+
+SERVER_STATUS_HIGHLIGHTS = ['Users online']
+
+###
 try:
     user_insert(SUPER_ADMIN, 'thisemaildoesntexists@email', STATUS_DIE, '', ROOM_INITIAL)
     room_insert(ROOM_INITIAL, SUPER_ADMIN)
@@ -141,7 +144,7 @@ def connect_room(auth:object)->None:
     ###
     user_ip = flask.request.remote_addr;
     user_name = flask.request.cookies.get("user_name", None);
-    user_connections = user_connections_get(user_name)
+    user_connections = userRoom_user_connections_get(user_name)
 
     print('user_get: ', user_get(user_name))
 
@@ -150,9 +153,7 @@ def connect_room(auth:object)->None:
         return
 
     print('user_name: ', user_name)
-
-    user_connections_add(user_name)
-    user_status_update(user_name, STATUS_ONLINE)
+    print('user_connections: ', user_connections)
 
     ###
     if not socket_id in socket_data:
@@ -190,6 +191,11 @@ def connect_room(auth:object)->None:
         "message_offset": message_offset
     })
 
+    ###
+    flask_socketio.emit('server_status_highlight', {
+        "highlight": SERVER_STATUS_HIGHLIGHTS
+    })
+
 def connect_room_manager()->None:
     pass
 
@@ -204,19 +210,19 @@ def handler_connect(auth:object)->None:
 
 @socketio.on('disconnect')
 def handler_disconnect()->None:
+    print('socket_data: ', socket_data)
+
     socket_id = flask.request.sid
     server_room = socket_data[socket_id]["room"]
 
     #
     user_ip = flask.request.remote_addr;
     user_name = flask.request.cookies.get("user_name", None)
+    user_connections = userRoom_user_connections_get(user_name)
 
     if not user_name:
         flask_socketio.emit('user_invalid')
         return
-
-    user_connections = user_connections_get(user_name)
-    user_connections_minus(user_name)
 
     room_leave({
         "room": server_room
@@ -237,17 +243,21 @@ def handler_disconnect()->None:
 ###
 def room_join(data)->None:
     room_name = data["room"]
-    user_name = flask.request.cookies["user_name"]
-
-    message_offset = 0
-
-    socket_id = flask.request.sid
     if not room_name:
         return
 
+    user_name = flask.request.cookies["user_name"]
+    user_connections = userRoom_connections_get(user_name, room_name)
+
+    if not user_connections:
+        userRoom_insert(user_name, room_name)
+    userRoom_connections_add(user_name, room_name)
+
+    #
     message_content = f"User { user_name } joined to this room" # +room_name
     message_send_system(message_content, room_name)
 
+    socket_id = flask.request.sid
     socket_data[socket_id]["room"] = room_name
 
     flask_socketio.join_room(room_name)
@@ -257,6 +267,7 @@ def room_join(data)->None:
     flask_socketio.emit('output_room_clean');
 
     #
+    message_offset = 0
     data_recovery(room_name, message_offset, message_fetch_newest)
 
     flask_socketio.emit('room_joined', {
@@ -266,9 +277,15 @@ def room_join(data)->None:
 
 def room_leave(data)->None:
     room_name = data["room"]
-    user_name = flask.request.cookies["user_name"]
     if not room_name:
         return
+
+    user_name = flask.request.cookies["user_name"]
+    user_connections = userRoom_connections_get(user_name, room_name)
+
+    userRoom_connections_minus(user_name, room_name)
+    if user_connections == 1:
+        userRoom_delete(user_name, room_name)
 
     message_content = f"User { user_name } get out of this room" # +room_name
     message_send_system(message_content, room_name)
@@ -359,6 +376,23 @@ def handler_message_load(auth)->None:
 
     message_data_recovery(server_room, message_old_offset, message_fetch_oldest)
 
+##
+@socketio.on('server_status_data_get')
+def server_status_data_get(data)->None:
+    highlight_name = data["highlight_name"]
+    room_name = socket_data[flask.request.sid]["room"]
 
+    data = None
+
+    # User Online
+    if highlight_name == SERVER_STATUS_HIGHLIGHTS[0]:
+        data = userRoom_user_online_get(room_name)
+
+    flask_socketio.emit('server_status_data', {
+        'highlight_name': highlight_name,
+        'data': data
+    })
+
+##
 if __name__=='__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)

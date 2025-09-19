@@ -11,6 +11,9 @@ export const DOM_CHAT_MESSAGE_ID = 'chat_message';
 export const DOM_SERVER_STATUS_ID = 'server_status';
 export const DOM_SERVER_STATUS_PULL_ID = 'server_status_pull';
 
+export const DOM_SERVER_STATUS_HIGHLIGHT_ID = 'server_status_highlight';
+export const DOM_SERVER_STATUS_RESULT_ID = 'server_status_result';
+
 //
 export const DOM_DATA_UPDATE_ID = 'data_update';
 export const DOM_DATA_ID = 'data';
@@ -57,6 +60,15 @@ export const DOM_MESSAGE_MORE = `
     </div>
 `
 
+export const DOM_SERVER_STATUS_HIGHTLIGHT = (highlight_name) => {
+    return `
+    <li>
+        <button id="${DOM_SERVER_STATUS_ID}_${highlight_name}" onclick='server_status_data_get(this)'>
+        <h3>${highlight_name}</h3>
+        </button>
+    </li>`
+}
+
 //
 export function time_now(timestamp){
     const now = new Date(timestamp);
@@ -94,4 +106,5 @@ export const CHAT_MESSAGE = document.getElementById(DOM_CHAT_MESSAGE_ID);
 
 export const SERVER_STATUS = document.getElementById(DOM_SERVER_STATUS_ID);
 export const SERVER_STATUS_PULL = document.getElementById(DOM_SERVER_STATUS_PULL_ID);
-
+export const SERVER_STATUS_HIGHLIGHT = document.getElementById(DOM_SERVER_STATUS_HIGHLIGHT_ID);
+export const SERVER_STATUS_RESULT = document.getElementById(DOM_SERVER_STATUS_RESULT_ID);
