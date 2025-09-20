@@ -118,13 +118,6 @@ function message_show_end(data, clock_last, message_html){
 }
 
 
-function message_load(){
-    const message_more = document.getElementById(index.DOM_BUTTON_MESSAGE_MORE);
-    message_more.remove();
-
-    socket.emit('message_load', socket.auth);
-}
-
 //
 socket.on('connect', () => {
     // sessionStorage.setItem('clockLast', 'null');
@@ -301,5 +294,14 @@ function server_status_data_get(button){
     });
 }
 
+function message_load(){
+    const message_more = document.getElementById(index.DOM_BUTTON_MESSAGE_MORE);
+    message_more.remove();
+
+    socket.emit('message_load', socket.auth);
+}
+
+
 window.room_change_button = room_change_button;
 window.server_status_data_get = server_status_data_get;
+window.message_load = message_load;

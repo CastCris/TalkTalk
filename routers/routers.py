@@ -1,21 +1,12 @@
-import os
-import flask
-
-import hmac
-import hashlib
-
-import sqlalchemy
+from begin import *
 from database import *
 
-SECRET_KEY_LEN = 26
-SECRET_KEY = os.urandom(SECRET_KEY_LEN)
+import os
 
-STATUS_DIE = 'die'
-STATUS_ONLINE = 'online'
-STATUS_OFFLINE = 'offline'
+import flask
+import sqlalchemy
 
-SUPER_ADMIN = 'super_admin'
-ROOM_INITIAL = 'index'
+from sockets import *
 
 main_routers = flask.Blueprint('main', __name__)
 
