@@ -24,7 +24,7 @@ SYSTEM_MESSAGE_OFFSET_COUNT  = 0
 
 MESSAGE_SCROLLOFF = 250
 
-SERVER_STATUS_HIGHLIGHTS = ['Users online']
+SERVER_STATUS_HIGHLIGHTS = ['Users online', 'Test1', 'Test2', 'Test3']
 
 ROUTER_REGISTER_IGNORE = ['__pycache__', '__init__.py', 'router_register.py']
 

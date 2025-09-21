@@ -49,6 +49,7 @@ main{
 #rooms{
     background-color: gray;
     min-width: var(--rooms_width);
+
     height: 100%;
 
     overflow-y: scroll;
@@ -69,7 +70,6 @@ main{
     flex-grow: 1;
 
     min-width: var(--interface_user_main_width);
-    height: auto;
 }
 
 /* */
@@ -79,7 +79,7 @@ main{
     display: flex;
     flex-direction: column;
 
-    align-content: right;
+    /* align-content: right; */
 }
 
 .chat_neutral{
@@ -142,6 +142,17 @@ main{
     justify-content: center;
 
     background-color: yellow;
+    color: black;
+}
+
+#server_status_highlight{
+    display: flex;
+    justify-content: center;
+    
+    list-style-type: none;
+}
+
+.server_status_highlight_node > h3{
     color: black;
 }
 

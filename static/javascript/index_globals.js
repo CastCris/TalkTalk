@@ -12,6 +12,8 @@ export const DOM_SERVER_STATUS_ID = 'server_status';
 export const DOM_SERVER_STATUS_PULL_ID = 'server_status_pull';
 
 export const DOM_SERVER_STATUS_HIGHLIGHT_ID = 'server_status_highlight';
+export const DOM_SERVER_STAUTS_HIGHLIGHT_NODE_ID = 'server_status_highlight_node';
+
 export const DOM_SERVER_STATUS_RESULT_ID = 'server_status_result';
 
 //
@@ -63,7 +65,10 @@ export const DOM_MESSAGE_MORE = `
 export const DOM_SERVER_STATUS_HIGHTLIGHT = (highlight_name) => {
     return `
     <li>
-        <button id="${DOM_SERVER_STATUS_ID}_${highlight_name}" onclick='server_status_data_get(this)'>
+        <button
+        id="${DOM_SERVER_STATUS_ID}_${highlight_name}" 
+        class="${DOM_SERVER_STAUTS_HIGHLIGHT_NODE_ID}"
+        onclick='server_status_data_get(this)'>
         <h3>${highlight_name}</h3>
         </button>
     </li>`
@@ -114,5 +119,6 @@ export const CHAT_MESSAGE = document.getElementById(DOM_CHAT_MESSAGE_ID);
 
 export const SERVER_STATUS = document.getElementById(DOM_SERVER_STATUS_ID);
 export const SERVER_STATUS_PULL = document.getElementById(DOM_SERVER_STATUS_PULL_ID);
+
 export const SERVER_STATUS_HIGHLIGHT = document.getElementById(DOM_SERVER_STATUS_HIGHLIGHT_ID);
 export const SERVER_STATUS_RESULT = document.getElementById(DOM_SERVER_STATUS_RESULT_ID);

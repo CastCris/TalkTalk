@@ -19,6 +19,7 @@ def router_register(app:object, folder:str)->None:
             continue
         elif file_extension != 'py':
             router_register(app, file_path)
+            continue
 
         ##
         module_name = file[:-3]

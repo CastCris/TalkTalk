@@ -7,5 +7,8 @@
 
 !*.py
 !/templates/**/*.html
-!/static/**/*.css
-!/static/**/*.js
+!/static/style/**/*.css
+!/static/javascript/**/*.js
+
+!/static/fonts/**/*.ttf
+!/static/img/**/*.png

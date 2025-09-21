@@ -40,6 +40,7 @@ function time_label_gen(time_past, time_future){
 
     return ` 
     <div id="${index.DOM_DATA_UPDATE_ID}">
+        <hr>
         <h2 id="${index.DOM_DATA_ID}">${time_past["day"]}/${time_past["month"]}/${time_past["year"]}</h2>
     </div>
     ` 
@@ -242,23 +243,23 @@ socket.on('user_invalid', () => {
 
 socket.on('server_status_highlight', (data) => {
     const highlight = data["highlight"];
-    let html_content = '';
 
     index.SERVER_STATUS_HIGHLIGHT.innerHTML = '';
 
+    let innerHTML= '';
     for(var i=0; i<highlight.length; ++i){
         const highlight_name = highlight[i];
-        html_content += index.DOM_SERVER_STATUS_HIGHTLIGHT(highlight_name);
+        innerHTML += index.DOM_SERVER_STATUS_HIGHTLIGHT(highlight_name);
     }
 
-    index.SERVER_STATUS_HIGHLIGHT.innerHTML += html_content;
+    index.SERVER_STATUS_HIGHLIGHT.innerHTML += innerHTML;
 });
 
 socket.on('server_status_data', (data) => {
     console.log(data);
 
     const highlight_name = data["highlight"];
-    const content = data["result"];
+    const content = (data["result"])? data["result"] : ["No data avaible"];
 
     const output_box = document.getElementById(index.DOM_SERVER_STATUS_RESULT_ID);
     output_box.innerHTML = '';
@@ -288,7 +289,9 @@ index.CHAT_FORMS.addEventListener('submit', (e) => {
 });
 
 index.CHAT_MESSAGE.addEventListener('scroll', () => {
-    if(index.CHAT_MESSAGE.scrollHeight - index.CHAT_MESSAGE.scrollTop == index.CHAT_MESSAGE.clientHeight){
+    // console.log(index.CHAT_MESSAGE.scrollHeight - index.CHAT_MESSAGE.scrollTop, index.CHAT_MESSAGE.clientHeight);
+    if(index.CHAT_MESSAGE.scrollHeight - index.CHAT_MESSAGE.scrollTop <= index.CHAT_MESSAGE.clientHeight + 1){
+        // console.log('BAHGHHHHH');
         socket.emit('message_load', socket.auth);
     }
 });
@@ -312,7 +315,6 @@ function server_status_data_get(button){
 function message_load(){
     const message_more = document.getElementById(index.DOM_BUTTON_MESSAGE_MORE);
     message_more.remove();
-
     socket.emit('message_load', socket.auth);
 }
 

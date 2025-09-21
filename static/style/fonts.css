@@ -1,0 +1,7 @@
+@font-face{
+    font-family: 'Ubuntu';
+    src: url('static/fonts/Ubuntu/Ubuntu-Regular.ttf') format('ttf');
+
+    font-weight: normal;
+    font-style: normal;
+}

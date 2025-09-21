@@ -6,7 +6,7 @@
 
     --label_text_color: black;
 
-    --header_height: 100px;
+    --header_height: 400px;
 }
 
 *{
@@ -14,24 +14,52 @@
     color: white;
 }
 
-@media screen and (min-width: 801px){
+p{
+    font-family: "Ubuntu", sans-serif;
+}
+span{
+    font-family: "Ubuntu", sans-serif;
+}
+
+@media screen and (min-height: 881px) {
     p{
-        font-size: 17px;
+        font-size: 30px;
+        color: white;
     }
+
+    span{
+        font-size: 25px;
+    }
+
+    .talktalk_logo > img{
+        height: 300px;
+    }
+
+    :root{
+        --header_height: 350px;
+    }
+}
+
+@media screen and (max-height: 880px) {
+    p{
+        font-size: 20px;
+        color: white
+    }
+
     span{
         font-size: 15px;
     }
+
+    .talktalk_logo > img{
+        height: 150px;
+    }
+
+    :root{
+        --header_height: 150px;
+    }
 }
 
-@media screen and (max-width: 800px){
-    p{
-        font-size: 24px;
-    }
-    span{
-        font-size: 20px;
-    }
-}
-
+/* */
 body{
     background-color: black;
 }
@@ -97,4 +125,14 @@ header{
 
     padding: 15px 10px 10px 10px;
     height: 50px;
+}
+
+.talktalk_logo{
+    transition: rotate 1.5s;
+
+    rotate: 0deg;
+}
+
+.talktalk_logo:hover{
+    rotate: 180deg;
 }
