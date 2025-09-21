@@ -128,10 +128,12 @@ main{
 
 .server_status_neutral{
     height: var(--server_status_height_neutral);
+    overflow-y: hidden;
 }
 
 .server_status_expand{
     height: var(--server_status_height_expand);
+    overflow-y: scroll;
 }
 
 

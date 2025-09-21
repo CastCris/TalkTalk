@@ -69,6 +69,14 @@ export const DOM_SERVER_STATUS_HIGHTLIGHT = (highlight_name) => {
     </li>`
 }
 
+export const DOM_SERVER_STATUS_NODE = (node_name, node_content) => {
+    return `
+    <div class="server_status_node_${node_name}">
+        <p>${node_content}</p>
+    </div>
+    `
+}
+
 //
 export function time_now(timestamp){
     const now = new Date(timestamp);

@@ -244,6 +244,8 @@ socket.on('server_status_highlight', (data) => {
     const highlight = data["highlight"];
     let html_content = '';
 
+    index.SERVER_STATUS_HIGHLIGHT.innerHTML = '';
+
     for(var i=0; i<highlight.length; ++i){
         const highlight_name = highlight[i];
         html_content += index.DOM_SERVER_STATUS_HIGHTLIGHT(highlight_name);
@@ -254,6 +256,19 @@ socket.on('server_status_highlight', (data) => {
 
 socket.on('server_status_data', (data) => {
     console.log(data);
+
+    const highlight_name = data["highlight"];
+    const content = data["result"];
+
+    const output_box = document.getElementById(index.DOM_SERVER_STATUS_RESULT_ID);
+    output_box.innerHTML = '';
+
+    let innerHTML = '';
+    for(var i=0; i<content.length; ++i){
+        innerHTML += index.DOM_SERVER_STATUS_NODE(highlight_name, content[i]);
+    }
+
+    output_box.innerHTML += innerHTML;
 });
 
 //
