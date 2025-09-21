@@ -1,4 +1,5 @@
 from begin import *
+from database import *
 
 def server_status_data_get(data)->None:
     highlight_name = data["highlight_name"]
@@ -12,5 +13,5 @@ def server_status_data_get(data)->None:
 
     flask_socketio.emit('server_status_data', {
         'highlight_name': highlight_name,
-        'data': data
+        'result': data
     })

@@ -13,12 +13,12 @@ def router_register(app:object, folder:str)->None:
         print(file)
 
         file_extension = file.split('.')[-1]
+        file_path = f"{folder}/{file}"
 
-        if file_extension != 'py' and os.path.isfile(file):
+        if file_extension != 'py' and os.path.isfile(file_path):
             continue
         elif file_extension != 'py':
-            file_path = f"{folder}/{file}"
-            router_register(app, file)
+            router_register(app, file_path)
 
         ##
         module_name = file[:-3]

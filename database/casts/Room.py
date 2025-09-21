@@ -1,7 +1,9 @@
 from sqlalchemy import Column, String, ForeignKey
 from .base import Base
-from .User import *
 
+from .User import USER_NAME_LEN
+
+##
 ROOM_NAME_LEN = 100
 
 class Room(Base):
@@ -9,3 +11,4 @@ class Room(Base):
 
     name = Column(String(ROOM_NAME_LEN), primary_key=True)
     user_admin = Column(String(USER_NAME_LEN), ForeignKey('User.name'))
+

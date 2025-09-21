@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, ForeignKey
 from .base import Base
 
+##
 USER_NAME_LEN = 80
 USER_EMAIL_LEN = 240
 USER_PASSWORD_LEN = 50
@@ -15,3 +16,4 @@ class User(Base):
     status = Column(String(USER_STATUS_LEN))
 
     room_home = Column(String(100))
+

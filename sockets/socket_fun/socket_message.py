@@ -1,6 +1,8 @@
 from begin import *
 from database import *
 
+import sqlalchemy
+
 ##
 def message_server_id()->str:
     global SYSTEM_MESSAGE_OFFSET_COUNT 
@@ -53,3 +55,34 @@ def message_send_system(message_content:str, room_name:str)->None:
     message_date = message_date_get(message_id)
 
     message_send_room(message_content, message_date, SUPER_ADMIN, room_name)
+
+##
+def message_handler(data)->None:
+    message_content = data["message_content"]
+    message_id = data["message_id"]
+
+    print('message: ',data)
+
+    room_name = data["room"]
+    user_name = flask.request.cookies["user_name"]
+
+    try:
+        message_insert(message_id, message_content, user_name, room_name) 
+    except sqlalchemy.exc.IntegrityError as e:
+        flask_socketio.emit('user_invalid')
+        print('Handler_message Error: ', e)
+
+        return
+    except Exception as e:
+        message_content = "Error in message loading"
+        session.rollback()
+
+        print('Handler_mesaage Error: ', e)
+
+        return
+
+    message_date = message_date_get(message_id)
+    print('message_date: ', message_date)
+    #
+
+    message_send_room(message_content, message_date, user_name, room_name)
