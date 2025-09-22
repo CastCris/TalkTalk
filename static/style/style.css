@@ -22,28 +22,34 @@ span{
 }
 
 @media screen and (min-height: 881px) {
-    p{
-        font-size: 30px;
-        color: white;
+    p, input[type="text"]{
+        font-size: 23px;
+    }
+
+    input[type="text"]{
+        font-size: 23px;
     }
 
     span{
-        font-size: 25px;
+        font-size: 18px;
     }
 
     .talktalk_logo > img{
-        height: 300px;
+        height: 200px;
     }
 
     :root{
-        --header_height: 350px;
+        --header_height: 250px;
     }
 }
 
 @media screen and (max-height: 880px) {
     p{
         font-size: 20px;
-        color: white
+    }
+
+    input[type="text"]{
+        font-size: 20px;
     }
 
     span{
