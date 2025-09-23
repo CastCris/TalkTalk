@@ -32,9 +32,9 @@ export const DOM_BUTTON_ROOM_ID = 'room_name_';
 export const DOM_ROOM_SELECTED = 'room_selected';
 export const DOM_ROOM_UNSELECTED = 'room_unselected';
 
-export const DOM_ROOM = (room_name, room_class) => {
+export const DOM_ROOM_NODE = (room_name, room_class) => {
     return `
-        <li>
+        <li class='room_node'>
             <button onclick='room_change_button(this)'
             id='${DOM_BUTTON_ROOM_ID}${room_name}'>
             <p class='${room_class}'>${room_name}</p>

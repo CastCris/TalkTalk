@@ -200,7 +200,7 @@ socket.on('room_recovery', (data) => {
     for(var i=0;i<rooms.length;++i){
         const room_name = rooms[i];
 
-        const room_new = index.DOM_ROOM(room_name, index.DOM_ROOM_UNSELECTED);
+        const room_new = index.DOM_ROOM_NODE(room_name, index.DOM_ROOM_UNSELECTED);
         index.ROOM_ABLE.innerHTML += room_new;
 
         console.log(rooms[i]);
@@ -228,7 +228,7 @@ socket.on('room_create', (data) => {
         if(room_name == socket.auth.serverRoom)
             room_class = index.DOM_ROOM_SELECTED;
 
-        const room_new = index.DOM_ROOM(room_name, room_class)
+        const room_new = index.DOM_ROOM_NODE(room_name, room_class)
         
         index.ROOM_ABLE.innerHTML += room_new;
     }

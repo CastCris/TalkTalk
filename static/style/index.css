@@ -55,6 +55,13 @@ main{
     overflow-y: scroll;
 }
 
+.room_node{
+	padding: 10px;
+	margin: 4px;
+
+	background-color: purple;
+}
+
 .room_selected{
     background-color: white;
     color: black;
@@ -143,6 +150,12 @@ main{
 
     background-color: yellow;
     color: black;
+
+	padding: 10px
+}
+
+#server_status_pull > p{
+	color: black;
 }
 
 #server_status_highlight{

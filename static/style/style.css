@@ -21,12 +21,9 @@ span{
     font-family: "Ubuntu", sans-serif;
 }
 
+/* monitor screnn */
 @media screen and (min-height: 881px) {
-    p, input[type="text"]{
-        font-size: 23px;
-    }
-
-    input[type="text"]{
+    p, input[type="text"], label, a, button{
         font-size: 23px;
     }
 
@@ -43,12 +40,9 @@ span{
     }
 }
 
+/* mobile screen */
 @media screen and (max-height: 880px) {
-    p{
-        font-size: 20px;
-    }
-
-    input[type="text"]{
+    p, input[type="text"], label, a, button{
         font-size: 20px;
     }
 
