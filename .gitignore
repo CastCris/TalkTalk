@@ -4,6 +4,7 @@
 
 !.gitignore
 !requirements.txt
+!LICENSE
 
 !*.py
 !/templates/**/*.html
